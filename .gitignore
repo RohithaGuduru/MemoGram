@@ -1,0 +1,48 @@
+# =========================
+# Environment / Secrets
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# =========================
+# Python testing / cache
+# =========================
+.pytest_cache/
+.coverage
+htmlcov/
+
+# =========================
+# Node / Frontend
+# =========================
+node_modules/
+dist/
+.npm/
+*.log
+
+# =========================
+# Databases
+# =========================
+*.db
+*.sqlite
+*.sqlite3
+
+# =========================
+# IDE / OS
+# =========================
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo

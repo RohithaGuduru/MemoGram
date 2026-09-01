@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: elderly_care_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: elderly_care_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d elderly_care_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: elderly_care_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      PROJECT_NAME: "Cognitive Assistance Platform"
+      ENVIRONMENT: "development"
+      DEBUG: "True"
+      DATABASE_URL: "postgresql://postgres:postgrespassword@postgres:5432/elderly_care_db"
+      JWT_SECRET: "${JWT_SECRET}"
+      JWT_ALGORITHM: "HS256"
+      ACCESS_TOKEN_EXPIRE_MINUTES: "1440"
+      REFRESH_TOKEN_EXPIRE_DAYS: "30"
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:8000","http://localhost:5173","http://localhost:8080"]'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "python -m scripts.seed_data || true && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+volumes:
+  postgres_data:
