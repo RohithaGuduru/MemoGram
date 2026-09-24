@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { isRealPatientId, DemoModeApiError } from '../services/demoFallback';
 
 export type VoiceIntentType =
   | 'MEDICATION_SCHEDULE'
@@ -12,6 +13,7 @@ export interface VoiceProcessPayload {
   patient_id: string;
   language?: string;
   audio_base64?: string;
+  audio_content_type?: string;
   transcript_text?: string;
   session_context?: Record<string, any>;
 }
@@ -32,6 +34,9 @@ export interface VoiceProcessBackendResponse {
 
 export const voiceApi = {
   async processVoice(payload: VoiceProcessPayload): Promise<VoiceProcessBackendResponse> {
+    if (!isRealPatientId(payload.patient_id)) {
+      throw new DemoModeApiError(`Cannot process voice for demo patient ID: ${payload.patient_id}`);
+    }
     return apiClient<VoiceProcessBackendResponse>('/voice/process', {
       method: 'POST',
       body: JSON.stringify(payload),

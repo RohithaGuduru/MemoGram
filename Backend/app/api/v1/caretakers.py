@@ -25,6 +25,20 @@ def get_current_caretaker_profile(
     return profile
 
 
+@router.put("/me", response_model=CaregiverResponse)
+def update_current_caretaker_profile(
+    req: CaregiverUpdate,
+    current_user: User = Depends(require_caregiver),
+    db: Session = Depends(get_db),
+):
+    """Updates profile and personal preferences (language, font size) of the authenticated caretaker."""
+    from app.models.caregiver import Caregiver
+    caregiver = db.query(Caregiver).filter(Caregiver.user_id == current_user.id).first()
+    if not caregiver:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Caretaker profile not found")
+    return CaregiverService.update_caregiver(db, caregiver.id, req)
+
+
 @router.get("/me/patients", response_model=List[RelationshipResponse])
 def list_assigned_patients(
     current_user: User = Depends(require_caregiver),

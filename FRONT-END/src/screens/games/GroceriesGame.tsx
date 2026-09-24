@@ -39,13 +39,29 @@ const ALL_STORE_ITEMS: GroceryItem[] = [
 ];
 
 export const GroceriesGame: React.FC = () => {
-  const { navigateTo, adaptiveDifficulties } = useApp();
+  const { navigateTo, adaptiveDifficulties, t } = useApp();
   const difficulty = adaptiveDifficulties.groceries || 'standard';
 
-  // Number of items to remember based on difficulty
-  const targetCount = difficulty === 'easier' ? 3 : difficulty === 'challenging' ? 5 : 4;
+  const getItemName = (item: GroceryItem) => {
+    const key = 'item_' + item.id.replace('item-', '');
+    const localized = t(key);
+    return localized !== key ? localized : item.name;
+  };
+
+  // Levels 1 to 5:
+  // Level 1: 2 items + 4 distractors
+  // Level 2: 2 items + 6 distractors
+  // Level 3: 3 items + 5 distractors
+  // Level 4: 3 items + 7 distractors
+  // Level 5: 4 items + 6 distractors
+  const defaultLevel = difficulty === 'easier' ? 1 : difficulty === 'challenging' ? 5 : 3;
+  const [level, setLevel] = useState<number>(defaultLevel);
+
+  const targetCount = level <= 2 ? 2 : level <= 4 ? 3 : 4;
+  const shelfCount = level === 1 ? 6 : (level === 2 || level === 3) ? 8 : 10;
 
   const [targetItems, setTargetItems] = useState<GroceryItem[]>([]);
+  const [displayedStoreItems, setDisplayedStoreItems] = useState<GroceryItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [gameState, setGameState] = useState<'memorize' | 'select' | 'complete'>('memorize');
   const [countdown, setCountdown] = useState(8);
@@ -56,14 +72,20 @@ export const GroceriesGame: React.FC = () => {
   const [finalScore, setFinalScore] = useState(0);
   const [mistakesCount, setMistakesCount] = useState(0);
 
-  // Initialize randomized shopping list
+  // Initialize randomized shopping list & market shelf
   const startNewGame = () => {
     const shuffled = [...ALL_STORE_ITEMS].sort(() => 0.5 - Math.random());
     const selectedTargets = shuffled.slice(0, targetCount);
+    
+    // Distractors: other items from store up to shelfCount
+    const distractors = shuffled.slice(targetCount, shelfCount);
+    const shelfItems = [...selectedTargets, ...distractors].sort(() => 0.5 - Math.random());
+
     setTargetItems(selectedTargets);
+    setDisplayedStoreItems(shelfItems);
     setSelectedIds([]);
     setGameState('memorize');
-    setCountdown(difficulty === 'easier' ? 10 : 7);
+    setCountdown(level <= 2 ? 10 : level <= 4 ? 8 : 6);
     setStartTime(Date.now());
     setHintsUsed(0);
     setShowHintList(false);
@@ -71,8 +93,12 @@ export const GroceriesGame: React.FC = () => {
   };
 
   useEffect(() => {
-    startNewGame();
+    setLevel(defaultLevel);
   }, [difficulty]);
+
+  useEffect(() => {
+    startNewGame();
+  }, [level]);
 
   // Memorization countdown timer
   useEffect(() => {
@@ -131,7 +157,7 @@ export const GroceriesGame: React.FC = () => {
     setGameState('complete');
   };
 
-  const memorizeAudio = `Shopping list to remember: ${targetItems.map((t) => t.name).join(', ')}. Look closely and remember them.`;
+  const memorizeAudio = `Shopping list to remember: ${targetItems.map((t) => getItemName(t)).join(', ')}. Look closely and remember them.`;
   const selectAudio = "The shopping list is now hidden! Select the items from the shelf that were on your list.";
 
   return (
@@ -139,8 +165,8 @@ export const GroceriesGame: React.FC = () => {
       
       {/* Game Header */}
       <Header 
-        title="Groceries Shopping" 
-        subtitle="Memory Recall Activity"
+        title={t('game_groceries_title')} 
+        subtitle={t('game_groceries_desc')}
         audioPrompt={gameState === 'memorize' ? memorizeAudio : selectAudio}
         showBack 
         onBack={() => navigateTo('patient_games')} 
@@ -148,6 +174,35 @@ export const GroceriesGame: React.FC = () => {
 
       <div className="flex-1 p-4 sm:p-5 space-y-4 overflow-y-auto custom-scrollbar">
         
+        {/* Level Selector Bar */}
+        <div className="max-w-md mx-auto flex items-center justify-between bg-white dark:bg-stone-850 p-3 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-soft">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+              {t('level_label')}
+            </span>
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((lvl) => (
+                <button
+                  key={lvl}
+                  type="button"
+                  onClick={() => setLevel(lvl)}
+                  className={`w-7 h-7 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                    level === lvl
+                      ? 'bg-emerald-600 text-white shadow-xs scale-105'
+                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 hover:bg-stone-200'
+                  }`}
+                >
+                  {lvl}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <span className="text-[11px] font-bold text-stone-500">
+            {targetCount} items • {shelfCount - targetCount} distractors
+          </span>
+        </div>
+
         {/* Game State 1: Memorization Phase */}
         {gameState === 'memorize' && (
           <div className="space-y-4 max-w-md mx-auto animate-fade-in">
@@ -155,7 +210,7 @@ export const GroceriesGame: React.FC = () => {
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
                   <Sparkles size={16} />
-                  <span>Step 1: Memorize this list</span>
+                  <span>{t('groceries_step1_memorize')}</span>
                 </span>
                 <span className="text-xs font-black bg-emerald-200 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-100 px-3 py-1 rounded-full animate-pulse">
                   ⏱️ {countdown}s
@@ -163,10 +218,10 @@ export const GroceriesGame: React.FC = () => {
               </div>
 
               <h2 className="text-xl sm:text-2xl font-extrabold text-stone-900 dark:text-stone-100 mb-2">
-                Remember These {targetCount} Items:
+                {t('groceries_remember_items', { count: targetCount })}
               </h2>
               <p className="text-xs text-stone-500 mb-4">
-                Take a good look! In a few seconds, the list will be hidden.
+                {t('groceries_memorize_desc')}
               </p>
 
               {/* Items Card Display */}
@@ -178,7 +233,7 @@ export const GroceriesGame: React.FC = () => {
                   >
                     <span className="text-3xl">{item.emoji}</span>
                     <div className="text-left">
-                      <p className="font-extrabold text-sm text-stone-900 dark:text-stone-100">{item.name}</p>
+                      <p className="font-extrabold text-sm text-stone-900 dark:text-stone-100">{getItemName(item)}</p>
                       <p className="text-[10px] text-stone-400 font-semibold">{item.category}</p>
                     </div>
                   </div>
@@ -191,7 +246,7 @@ export const GroceriesGame: React.FC = () => {
               onClick={() => setGameState('select')}
               className="w-full py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base shadow-md shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-pointer transition-all"
             >
-              <span>I Remember! Start Shopping</span>
+              <span>{t('groceries_btn_start_shopping')}</span>
               <ArrowRight size={20} />
             </button>
           </div>
@@ -204,34 +259,34 @@ export const GroceriesGame: React.FC = () => {
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <h2 className="text-lg font-extrabold text-stone-900 dark:text-stone-100">
-                    Find the items on your list
+                    {t('groceries_find_items')}
                   </h2>
                   <p className="text-xs text-stone-500">
-                    Selected: <strong className="text-teal-700 dark:text-teal-300 font-bold">{selectedIds.length}</strong> of {targetCount} items
+                    {t('groceries_selected_count', { selected: selectedIds.length, total: targetCount })}
                   </p>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleUseHint}
-                  className="px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                  className="px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Eye size={14} />
-                  <span>Peek Hint ({hintsUsed})</span>
+                  <span>{t('peek_hint', { hints: hintsUsed })}</span>
                 </button>
               </div>
 
               {/* Temporary Hint Peek */}
               {showHintList && (
                 <div className="p-3 my-2 rounded-2xl bg-amber-100 dark:bg-amber-900/60 border border-amber-300 text-amber-950 dark:text-amber-100 text-xs font-semibold animate-fade-in">
-                  <span>List reminder: </span>
-                  {targetItems.map((t) => `${t.name} ${t.emoji}`).join(', ')}
+                  <span>{t('list_reminder')} </span>
+                  {targetItems.map((tItem) => `${getItemName(tItem)} ${tItem.emoji}`).join(', ')}
                 </div>
               )}
 
               {/* Store Shelf Grid */}
               <div className="grid grid-cols-2 gap-2.5 mt-3">
-                {ALL_STORE_ITEMS.map((item) => {
+                {displayedStoreItems.map((item) => {
                   const isSelected = selectedIds.includes(item.id);
 
                   return (
@@ -248,7 +303,7 @@ export const GroceriesGame: React.FC = () => {
                         <span className="text-2xl">{item.emoji}</span>
                         <div className="text-left">
                           <p className="font-bold text-xs text-stone-900 dark:text-stone-100 leading-tight">
-                            {item.name}
+                            {getItemName(item)}
                           </p>
                           <p className="text-[10px] text-stone-400">{item.category}</p>
                         </div>
@@ -272,10 +327,10 @@ export const GroceriesGame: React.FC = () => {
               <button
                 type="button"
                 onClick={startNewGame}
-                className="py-3 px-4 rounded-2xl bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-bold text-xs flex items-center justify-center gap-1.5"
+                className="py-3 px-4 rounded-2xl bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <RotateCcw size={15} />
-                <span>Restart</span>
+                <span>{t('btn_play_again')}</span>
               </button>
 
               <button
@@ -284,7 +339,7 @@ export const GroceriesGame: React.FC = () => {
                 className="flex-1 py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-base shadow-md shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-pointer transition-all"
               >
                 <CheckCircle2 size={18} />
-                <span>Done Shopping ({selectedIds.length} picked)</span>
+                <span>{t('groceries_btn_finish')} ({selectedIds.length})</span>
               </button>
             </div>
           </div>
@@ -296,7 +351,7 @@ export const GroceriesGame: React.FC = () => {
       <AdaptiveDifficultyModal
         isOpen={gameState === 'complete'}
         gameId="groceries"
-        gameTitle="Groceries Shopping"
+        gameTitle={t('game_groceries_title')}
         score={finalScore}
         timeSpentSeconds={timeSpent}
         mistakes={mistakesCount}

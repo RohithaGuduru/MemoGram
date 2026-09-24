@@ -15,7 +15,7 @@ import { PatientBottomNav } from '../../components/layout/PatientBottomNav';
 import { SpeakTextButton } from '../../components/common/SpeakTextButton';
 
 export const PatientHelpScreen: React.FC = () => {
-  const { openSosModal } = useApp();
+  const { openSosModal, t } = useApp();
 
   const helpIntroAudio = "Memogram Help Guide. You can speak anytime using the microphone button or listen to any text by tapping the speaker icon.";
 
@@ -23,7 +23,7 @@ export const PatientHelpScreen: React.FC = () => {
     <div className="flex-1 flex flex-col justify-between bg-warm-50 dark:bg-stone-900 text-stone-800 dark:text-stone-100">
       
       {/* Header */}
-      <Header title="Help & Voice Guide" audioPrompt={helpIntroAudio} showSOS />
+      <Header title={t('help_title')} audioPrompt={helpIntroAudio} showSOS />
 
       <div className="flex-1 p-4 sm:p-5 space-y-4 overflow-y-auto custom-scrollbar">
         
@@ -35,9 +35,9 @@ export const PatientHelpScreen: React.FC = () => {
             </div>
             <div>
               <h2 className="text-lg font-extrabold text-stone-900 dark:text-stone-100">
-                How Memogram Helps You
+                {t('how_memogram_helps')}
               </h2>
-              <p className="text-xs text-stone-500">Easy tips for talking, listening & games</p>
+              <p className="text-xs text-stone-500">{t('help_subtitle')}</p>
             </div>
           </div>
 
@@ -53,9 +53,9 @@ export const PatientHelpScreen: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-extrabold text-base text-stone-900 dark:text-stone-100">
-                  1. Speak Instead of Typing
+                  {t('tip1_title')}
                 </h3>
-                <p className="text-xs text-stone-500">Tap the large microphone to talk</p>
+                <p className="text-xs text-stone-500">{t('tap_to_speak')}</p>
               </div>
             </div>
 
@@ -67,7 +67,7 @@ export const PatientHelpScreen: React.FC = () => {
           </div>
 
           <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 font-medium leading-relaxed">
-            Whenever you see the green or red microphone button, tap it once and speak. Memogram will listen and reply warmly.
+            {t('tip1_desc')}
           </p>
         </div>
 
@@ -80,9 +80,9 @@ export const PatientHelpScreen: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-extrabold text-base text-stone-900 dark:text-stone-100">
-                  2. Listen to Any Text (🔊)
+                  {t('tip2_title')}
                 </h3>
-                <p className="text-xs text-stone-500">Hear medicine instructions and questions</p>
+                <p className="text-xs text-stone-500">{t('speaker_output')}</p>
               </div>
             </div>
 
@@ -94,7 +94,7 @@ export const PatientHelpScreen: React.FC = () => {
           </div>
 
           <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 font-medium leading-relaxed">
-            Every screen has a speaker button next to the title and every medicine has its own Listen button so you never need to struggle reading small text.
+            {t('tip2_desc')}
           </p>
         </div>
 
@@ -107,9 +107,9 @@ export const PatientHelpScreen: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-extrabold text-base text-rose-900 dark:text-rose-200">
-                  3. Immediate Help (SOS)
+                  {t('tip3_title')}
                 </h3>
-                <p className="text-xs text-rose-700 dark:text-rose-400">Always available in top header</p>
+                <p className="text-xs text-rose-700 dark:text-rose-400">{t('sos_tap_hint')}</p>
               </div>
             </div>
 
@@ -121,7 +121,7 @@ export const PatientHelpScreen: React.FC = () => {
           </div>
 
           <p className="text-xs sm:text-sm text-rose-950 dark:text-rose-200 font-medium leading-relaxed">
-            Tap the red SOS button at any time. It will immediately confirm and send an alert notification to your caregiver Priya.
+            {t('tip3_desc')}
           </p>
 
           <button
@@ -130,7 +130,7 @@ export const PatientHelpScreen: React.FC = () => {
             className="w-full mt-2 py-3 px-4 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm cursor-pointer"
           >
             <ShieldAlert size={16} />
-            <span>Test SOS Help Dialog</span>
+            <span>{t('emergency_sos_btn')}</span>
           </button>
         </div>
 

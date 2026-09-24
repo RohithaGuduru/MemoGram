@@ -21,6 +21,8 @@ class CaregiverService:
             phone=caregiver.user.phone if caregiver.user else None,
             agency=caregiver.agency,
             notes=caregiver.notes,
+            preferred_language=getattr(caregiver, "preferred_language", "en") or "en",
+            font_size=getattr(caregiver, "font_size", "normal") or "normal",
             created_at=caregiver.created_at,
         )
 
@@ -33,6 +35,10 @@ class CaregiverService:
             caregiver.agency = req.agency
         if req.notes is not None:
             caregiver.notes = req.notes
+        if req.preferred_language is not None:
+            caregiver.preferred_language = req.preferred_language
+        if req.font_size is not None:
+            caregiver.font_size = req.font_size
         db.commit()
         db.refresh(caregiver)
         return CaregiverResponse(
@@ -43,5 +49,7 @@ class CaregiverService:
             phone=caregiver.user.phone if caregiver.user else None,
             agency=caregiver.agency,
             notes=caregiver.notes,
+            preferred_language=getattr(caregiver, "preferred_language", "en") or "en",
+            font_size=getattr(caregiver, "font_size", "normal") or "normal",
             created_at=caregiver.created_at,
         )

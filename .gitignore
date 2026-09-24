@@ -46,3 +46,13 @@ dist/
 .DS_Store
 *.swp
 *.swo
+# Local TTS testing artifacts
+Backend/scripts/output_as.wav
+Backend/scripts/test_audio/
+
+# Local test scripts
+Backend/scripts/test_all_languages.py
+Backend/scripts/test_http_synthesize.py
+Backend/scripts/test_inference.py
+Backend/scripts/test_unsupported.py
+Backend/scripts/verify_real_tts.py

@@ -7,9 +7,16 @@ import { SupportedLanguageCode } from '../../types';
 interface LanguageSelectorModalProps {
   isOpen: boolean;
   onClose: () => void;
+  currentLanguage?: SupportedLanguageCode;
+  onSelectLanguage?: (code: SupportedLanguageCode) => void;
 }
 
-export const LanguageSelectorModal: React.FC<LanguageSelectorModalProps> = ({ isOpen, onClose }) => {
+export const LanguageSelectorModal: React.FC<LanguageSelectorModalProps> = ({ 
+  isOpen, 
+  onClose,
+  currentLanguage,
+  onSelectLanguage,
+}) => {
   const { 
     primaryLanguage, 
     fallbackLanguage, 
@@ -21,9 +28,15 @@ export const LanguageSelectorModal: React.FC<LanguageSelectorModalProps> = ({ is
 
   if (!isOpen) return null;
 
+  const effectiveLang = currentLanguage || primaryLanguage;
+
   const handleSelect = (code: SupportedLanguageCode) => {
     if (activeTab === 'primary') {
-      setPrimaryLanguage(code);
+      if (onSelectLanguage) {
+        onSelectLanguage(code);
+      } else {
+        setPrimaryLanguage(code);
+      }
     } else {
       setFallbackLanguage(code);
     }
@@ -42,7 +55,7 @@ export const LanguageSelectorModal: React.FC<LanguageSelectorModalProps> = ({ is
             <div>
               <h2 className="text-xl font-bold">Language Settings</h2>
               <p className="text-xs text-stone-500 dark:text-stone-400">
-                Choose primary & fallback languages (7 supported)
+                Choose primary & fallback languages (8 supported)
               </p>
             </div>
           </div>
@@ -93,11 +106,11 @@ export const LanguageSelectorModal: React.FC<LanguageSelectorModalProps> = ({ is
           </p>
         </div>
 
-        {/* Language List of exact 7 languages */}
+        {/* Language List of exact 8 languages */}
         <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
           {LANGUAGE_LIST.map((lang) => {
             const isSelected = activeTab === 'primary' 
-              ? primaryLanguage === lang.code 
+              ? effectiveLang === lang.code 
               : fallbackLanguage === lang.code;
 
             const ttsOk = isTTSAvailable(lang.code);

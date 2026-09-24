@@ -15,11 +15,12 @@ class IndicParlerTTSProvider(TTSProvider):
     """
 
     SUPPORTED_LANGUAGES: Dict[str, str] = {
+        "as": "Assamese",
         "brx": "Bodo",
         "mni": "Manipuri / Meitei",
-        "as": "Assamese",
-        "bn": "Bengali",
         "hi": "Hindi",
+        "en": "English",
+        "bn": "Bengali",
     }
 
     def __init__(
@@ -30,12 +31,12 @@ class IndicParlerTTSProvider(TTSProvider):
         api_key: Optional[str] = None,
     ):
         self.enabled = enabled if enabled is not None else settings.INDIC_PARLER_TTS_ENABLED
-        self.endpoint = endpoint or settings.INDIC_PARLER_TTS_ENDPOINT
+        self.endpoint = endpoint or settings.INDIC_PARLER_TTS_ENDPOINT or "http://localhost:8001/synthesize"
         self.model = model or settings.INDIC_PARLER_TTS_MODEL
         self.api_key = api_key or settings.INDIC_PARLER_TTS_API_KEY
 
     def is_available(self) -> bool:
-        """Returns True if Indic Parler-TTS is enabled and an endpoint or local model is configured."""
+        """Returns True if Indic Parler-TTS is enabled and an endpoint or model is configured."""
         return bool(self.enabled and (self.endpoint or self.model))
 
     def supports_language(self, language: str) -> bool:
@@ -46,7 +47,7 @@ class IndicParlerTTSProvider(TTSProvider):
         norm_code = language.lower().split("-")[0]
         lang_name = self.SUPPORTED_LANGUAGES.get(norm_code, language)
 
-        if not self.is_available():
+        if not self.enabled:
             return TTSResult(
                 audio_base64=None,
                 language=language,
@@ -64,49 +65,61 @@ class IndicParlerTTSProvider(TTSProvider):
                 message=f"Voice support for {lang_name} is currently under development.",
             )
 
-        # Call hosted inference endpoint if specified
-        if self.endpoint:
-            try:
-                headers = {"Content-Type": "application/json"}
-                if self.api_key:
-                    headers["Authorization"] = f"Bearer {self.api_key}"
+        if not self.endpoint:
+            return TTSResult(
+                audio_base64=None,
+                language=language,
+                available=False,
+                status="UNAVAILABLE",
+                message="Indic Parler-TTS endpoint is not configured.",
+            )
 
-                payload = {
-                    "text": text,
-                    "language": norm_code,
-                    "model": self.model,
-                }
+        try:
+            headers = {"Content-Type": "application/json"}
+            if self.api_key:
+                headers["Authorization"] = f"Bearer {self.api_key}"
 
-                async with httpx.AsyncClient(timeout=20.0) as client:
-                    resp = await client.post(self.endpoint, json=payload, headers=headers)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        audio_b64 = data.get("audio_base64") or data.get("audio")
-                        if audio_b64:
-                            return TTSResult(
-                                audio_base64=audio_b64,
-                                audio_url=data.get("audio_url"),
-                                language=language,
-                                available=True,
-                                status="AVAILABLE",
-                                message=f"Synthesized via Indic Parler-TTS ({self.model}).",
-                            )
-            except Exception as e:
-                return TTSResult(
-                    audio_base64=None,
-                    language=language,
-                    available=False,
-                    status="ERROR",
-                    message=f"Indic Parler-TTS synthesis error: {str(e)}",
-                )
+            payload = {
+                "text": text,
+                "language": norm_code,
+                "model": self.model,
+            }
 
-        # If enabled in testing/local mode without an endpoint, generate a mock audio payload
-        # RIFF WAVE mock header
-        mock_wav_b64 = "UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="
-        return TTSResult(
-            audio_base64=mock_wav_b64,
-            language=language,
-            available=True,
-            status="AVAILABLE",
-            message=f"Synthesized via Indic Parler-TTS local engine ({self.model}).",
-        )
+            async with httpx.AsyncClient(timeout=90.0) as client:
+                resp = await client.post(self.endpoint, json=payload, headers=headers)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    audio_b64 = data.get("audio_base64") or data.get("audio")
+                    if audio_b64:
+                        return TTSResult(
+                            audio_base64=audio_b64,
+                            audio_url=data.get("audio_url"),
+                            language=language,
+                            available=True,
+                            status="AVAILABLE",
+                            message=f"Synthesized via Indic Parler-TTS ({self.model}).",
+                        )
+                    else:
+                        return TTSResult(
+                            audio_base64=None,
+                            language=language,
+                            available=False,
+                            status="ERROR",
+                            message="Indic Parler-TTS endpoint returned empty audio payload.",
+                        )
+                else:
+                    return TTSResult(
+                        audio_base64=None,
+                        language=language,
+                        available=False,
+                        status="ERROR",
+                        message=f"Indic Parler-TTS endpoint returned HTTP {resp.status_code}: {resp.text}",
+                    )
+        except Exception as e:
+            return TTSResult(
+                audio_base64=None,
+                language=language,
+                available=False,
+                status="ERROR",
+                message=f"Indic Parler-TTS synthesis error: {str(e)}",
+            )

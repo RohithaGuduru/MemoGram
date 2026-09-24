@@ -1,87 +1,132 @@
 import React, { useState } from 'react';
-import { Globe, Type, Check, Sparkles, ArrowRight, Heart } from 'lucide-react';
+import { Globe, Type, Check, Sparkles, ArrowRight } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { LANGUAGE_LIST, t, frontendToBackendLang } from '../../services/languageCapabilities';
+import { LANGUAGE_LIST, t, frontendToBackendLang, backendToFrontendLang } from '../../services/languageCapabilities';
 import { SupportedLanguageCode, FontSizeSetting } from '../../types';
 import { SpeakTextButton } from '../../components/common/SpeakTextButton';
+import { patientsApi, authApi } from '../../api';
+import { isRealPatientId } from '../../services/demoFallback';
+import { getAccessToken } from '../../api/client';
 
 export const PatientSetupScreen: React.FC = () => {
   const { 
-    primaryLanguage, 
+    patientLanguage, 
     fallbackLanguage, 
-    setPrimaryLanguage, 
-    accessibility, 
-    updateAccessibility, 
+    setPatientLanguage, 
+    patientFontSize, 
+    setPatientFontSize, 
     updatePatient, 
     patient, 
     navigateTo, 
     showToast 
   } = useApp();
 
-  const [selectedLang, setSelectedLang] = useState<SupportedLanguageCode>(primaryLanguage || 'as-IN');
-  const [selectedFontSize, setSelectedFontSize] = useState<FontSizeSetting>(accessibility.fontSize || 'large');
+  // Default to existing saved preference, or 'as-IN' and 'normal' if unset
+  const [selectedLang, setSelectedLang] = useState<SupportedLanguageCode>(patientLanguage || 'as-IN');
+  const [selectedFontSize, setSelectedFontSize] = useState<FontSizeSetting>(patientFontSize || 'normal');
   const [isSaving, setIsSaving] = useState(false);
 
   const handleLanguageChange = (code: SupportedLanguageCode) => {
     setSelectedLang(code);
-    setPrimaryLanguage(code);
   };
 
   const handleFontSizeChange = (size: FontSizeSetting) => {
     setSelectedFontSize(size);
-    updateAccessibility({ fontSize: size });
   };
 
   const handleSaveAndContinue = async () => {
     setIsSaving(true);
     try {
-      // 1. Update accessibility
-      updateAccessibility({
-        fontSize: selectedFontSize,
-      });
+      // 1. Resolve real patient ID
+      let targetPatientId = patient.id;
+      if (!isRealPatientId(targetPatientId) && getAccessToken()) {
+        try {
+          const me = await authApi.getMe();
+          if (me && isRealPatientId(me.patient_id)) {
+            targetPatientId = me.patient_id;
+          }
+        } catch {}
+      }
 
-      // 2. Set primary language
-      setPrimaryLanguage(selectedLang);
-
-      // 3. Mark setup completed in localStorage
-      try {
-        localStorage.setItem('memogram_patient_setup_completed', 'true');
-      } catch {}
-
-      // 4. Update backend profile if connected
       const backendLangCode = frontendToBackendLang(selectedLang);
-      updatePatient({
-        primaryLanguage: selectedLang,
-      });
 
-      try {
-        const { patientsApi, authApi } = await import('../../api');
-        let targetPatientId = patient.id;
-        if (!targetPatientId) {
-          try {
-            const me = await authApi.getMe();
-            if (me?.patient_id) {
-              targetPatientId = me.patient_id;
-            }
-          } catch {}
-        }
-
-        if (targetPatientId) {
+      if (isRealPatientId(targetPatientId)) {
+        // Real mode: Save patient selections to the backend
+        try {
           await patientsApi.updatePatient(targetPatientId, {
+            primary_language: backendLangCode,
             preferred_language: backendLangCode,
-            font_size: selectedFontSize === 'normal' ? 'medium' : selectedFontSize,
+            font_size: selectedFontSize === 'normal' ? 'normal' : selectedFontSize,
             accessibility_preferences: {
-              ...(patient as any).accessibility_preferences,
+              ...(patient.accessibility_preferences || {}),
               preferences_configured: true,
               fontSize: selectedFontSize,
             },
           });
+
+          // After saving successfully, load saved values back from the backend to verify persistence
+          const verifiedPatient = await patientsApi.getPatient(targetPatientId);
+          if (verifiedPatient) {
+            const confirmedLang = backendToFrontendLang(
+              verifiedPatient.preferred_language || verifiedPatient.primary_language || backendLangCode
+            );
+            const confirmedBackendFont = verifiedPatient.font_size;
+            const confirmedFontSize: FontSizeSetting = 
+              confirmedBackendFont === 'large' ? 'large' :
+              confirmedBackendFont === 'extra-large' || confirmedBackendFont === 'extra_large' ? 'extra-large' : 'normal';
+
+            setPatientLanguage(confirmedLang);
+            setPatientFontSize(confirmedFontSize);
+
+            updatePatient({
+              id: targetPatientId,
+              primaryLanguage: confirmedLang,
+              fontSize: confirmedFontSize,
+              accessibility_preferences: verifiedPatient.accessibility_preferences,
+            });
+          } else {
+            setPatientLanguage(selectedLang);
+            setPatientFontSize(selectedFontSize);
+            updatePatient({
+              id: targetPatientId,
+              primaryLanguage: selectedLang,
+              fontSize: selectedFontSize,
+            });
+          }
+
+          showToast('Preferences saved successfully!', 'success');
+        } catch (apiErr: any) {
+          console.error('[PatientSetup] Backend preference save error:', apiErr);
+          setPatientLanguage(selectedLang);
+          setPatientFontSize(selectedFontSize);
+          updatePatient({
+            primaryLanguage: selectedLang,
+            fontSize: selectedFontSize,
+          });
+          showToast('Preferences saved locally.', 'warning');
         }
-      } catch (err) {
-        console.debug('[PatientSetup] Offline preference save', err);
+      } else {
+        // Demo mode: local state update only with clear demo feedback
+        setPatientLanguage(selectedLang);
+        setPatientFontSize(selectedFontSize);
+        updatePatient({
+          primaryLanguage: selectedLang,
+          fontSize: selectedFontSize,
+          accessibility_preferences: {
+            ...(patient.accessibility_preferences || {}),
+            preferences_configured: true,
+            fontSize: selectedFontSize,
+          },
+        });
+        showToast('Preferences saved (Demo mode)!', 'success');
       }
 
-      showToast(t('continue_to_home', selectedLang, fallbackLanguage), 'success');
+      // Mark setup completed in localStorage
+      try {
+        localStorage.setItem('memogram_patient_setup_completed', 'true');
+      } catch {}
+
+      // Navigate to Patient Welcome / Patient Dashboard
       navigateTo('patient_home');
     } finally {
       setIsSaving(false);
@@ -129,12 +174,12 @@ export const PatientSetupScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Step 1: Language Selection (7 Memogram Languages) */}
+        {/* Step 1: Language Selection (8 Memogram Languages) */}
         <div className="bg-white dark:bg-stone-850 p-5 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-soft space-y-3">
           <div className="flex items-center gap-2">
             <Globe size={20} className="text-teal-600 dark:text-teal-400" />
             <h3 className="font-extrabold text-base text-stone-900 dark:text-stone-100">
-              {t('step_language_title', selectedLang, fallbackLanguage)}
+              {t('preferred_language_title', selectedLang, fallbackLanguage)}
             </h3>
           </div>
 

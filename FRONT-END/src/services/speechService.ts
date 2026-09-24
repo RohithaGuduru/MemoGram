@@ -94,6 +94,7 @@ class SpeechService {
       utterance.pitch = 1.05; // Friendly, warm pitch
 
       // Check if browser has an appropriate matching voice for this language
+      const isRegional = langCode !== 'en-IN' && langCode !== 'hi-IN';
       const voices = window.speechSynthesis.getVoices();
       if (voices.length > 0) {
         const matchingVoice = voices.find(v => 
@@ -103,14 +104,19 @@ class SpeechService {
 
         if (matchingVoice) {
           utterance.voice = matchingVoice;
-        } else if (langCode !== 'en-IN' && langCode !== 'hi-IN') {
-          // If we specifically requested a regional language and no matching voice exists,
-          // STRICT RULE: DO NOT switch to English/Hindi.
+        } else if (isRegional) {
+          // STRICT RULE: DO NOT switch to English/Hindi voice for regional languages.
           return {
             status: 'in_development',
-            message: `Voice support for ${langInfo.name} is currently under development on this device.`
+            message: `Speech synthesis for ${langInfo.name} is currently unavailable on this device.`
           };
         }
+      } else if (isRegional) {
+        // If voices list is empty or unsupported on this device, never allow browser default English/Hindi voice
+        return {
+          status: 'in_development',
+          message: `Speech synthesis for ${langInfo.name} is currently unavailable on this device.`
+        };
       }
 
       utterance.onstart = () => {

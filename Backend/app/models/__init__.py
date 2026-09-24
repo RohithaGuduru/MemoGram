@@ -23,6 +23,7 @@ from app.models.ai_insight import AIInsight
 from app.models.language_capability import LanguageCapability
 from app.models.sos_alert import SOSAlert
 from app.models.notification import Notification
+from app.models.password_reset import PasswordResetToken
 
 __all__ = [
     "User",
@@ -53,4 +54,5 @@ __all__ = [
     "LanguageCapability",
     "SOSAlert",
     "Notification",
+    "PasswordResetToken",
 ]

@@ -32,16 +32,14 @@ export const CaretakerAuthScreen: React.FC = () => {
         showToast('Account created successfully!', 'success');
       }
       updateCaretaker({ name, email });
-      setRole('caretaker');
+      setRole('caretaker', 'caretaker_setup');
       await refreshData();
-      navigateTo('caretaker_setup');
     } catch (err: any) {
       console.debug('[CaretakerAuth] Backend login fallback:', err);
       // If error (e.g. invalid credentials or offline), give clear feedback and proceed in prototype mode
       showToast(err?.message || 'Proceeding in Caretaker mode', 'info');
       updateCaretaker({ name, email });
-      setRole('caretaker');
-      navigateTo('caretaker_setup');
+      setRole('caretaker', 'caretaker_setup');
     } finally {
       setIsLoading(false);
     }
@@ -58,15 +56,13 @@ export const CaretakerAuthScreen: React.FC = () => {
       });
       showToast('Authenticated with Google', 'success');
       updateCaretaker({ name: 'Priya Sharma', email: 'priya.sharma@gmail.com' });
-      setRole('caretaker');
+      setRole('caretaker', 'caretaker_setup');
       await refreshData();
-      navigateTo('caretaker_setup');
     } catch (err: any) {
       console.debug('[CaretakerAuth] Google login fallback:', err);
       showToast('Signed in via Google', 'success');
       updateCaretaker({ name: 'Priya Sharma', email: 'priya.sharma@gmail.com' });
-      setRole('caretaker');
-      navigateTo('caretaker_setup');
+      setRole('caretaker', 'caretaker_setup');
     } finally {
       setIsLoading(false);
     }
@@ -167,6 +163,17 @@ export const CaretakerAuthScreen: React.FC = () => {
                 placeholder="Password"
               />
             </div>
+            {authMode === 'login' && (
+              <div className="flex justify-end mt-2">
+                <button
+                  type="button"
+                  onClick={() => navigateTo('forgot_password')}
+                  className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:underline cursor-pointer"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+            )}
           </div>
 
           <button

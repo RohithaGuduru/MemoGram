@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { isRealPatientId, DemoModeApiError } from '../services/demoFallback';
 
 export interface AIStatusBackendResponse {
   available: boolean;
@@ -30,12 +31,18 @@ export const aiApi = {
   },
 
   async getLatestInsights(patientId: string): Promise<AIInsightBackendResponse> {
+    if (!isRealPatientId(patientId)) {
+      throw new DemoModeApiError(`Cannot get AI insights for demo patient ID: ${patientId}`);
+    }
     return apiClient<AIInsightBackendResponse>(`/ai/insights/${patientId}`, {
       method: 'GET',
     });
   },
 
   async generateInsights(patientId: string, timeframe: string = 'week'): Promise<AIInsightBackendResponse> {
+    if (!isRealPatientId(patientId)) {
+      throw new DemoModeApiError(`Cannot generate AI insights for demo patient ID: ${patientId}`);
+    }
     return apiClient<AIInsightBackendResponse>(`/ai/insights/${patientId}`, {
       method: 'POST',
       body: JSON.stringify({ timeframe, force_refresh: true }),

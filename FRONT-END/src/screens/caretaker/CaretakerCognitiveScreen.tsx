@@ -15,17 +15,18 @@ import { useApp } from '../../context/AppContext';
 import { Header } from '../../components/common/Header';
 import { CaretakerNavbar } from '../../components/layout/CaretakerNavbar';
 import { DemoBanner } from '../../components/common/DemoBanner';
-import { CORE_GAMES, WEEKLY_ANALYTICS_DATA, DEMO_DATA_DISCLAIMER } from '../../services/mockData';
+import { CORE_GAMES, DEMO_DATA_DISCLAIMER } from '../../services/mockData';
+import { isRealPatientId } from '../../services/demoFallback';
 import { GameId } from '../../types';
 import { metricsApi } from '../../api';
 
 export const CaretakerCognitiveScreen: React.FC = () => {
-  const { cognitiveMetrics, gameHistory, patient } = useApp();
+  const { cognitiveMetrics, gameHistory, patient, t } = useApp();
   const [selectedGameFilter, setSelectedGameFilter] = useState<string>('all');
   const [historyPoints, setHistoryPoints] = useState<any[] | null>(null);
 
   React.useEffect(() => {
-    if (patient.id) {
+    if (patient.id && isRealPatientId(patient.id)) {
       (async () => {
         try {
           const res = await metricsApi.getPerformanceHistory(patient.id, 'week');
@@ -36,6 +37,8 @@ export const CaretakerCognitiveScreen: React.FC = () => {
           console.debug('[CaretakerCognitiveScreen] Using default trend data', e);
         }
       })();
+    } else {
+      setHistoryPoints(null);
     }
   }, [patient.id]);
 
@@ -43,9 +46,37 @@ export const CaretakerCognitiveScreen: React.FC = () => {
     ? gameHistory 
     : gameHistory.filter((h) => h.gameId === selectedGameFilter);
 
+  // Dynamic 7-day trend from backend history points or actual game history
+  const weeklyTrend = React.useMemo(() => {
+    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      const dayLabel = daysOfWeek[d.getDay()];
+      const dateStr = d.toISOString().split('T')[0];
+
+      const matchedPoint = historyPoints?.find((p) => p.date === dateStr);
+      if (matchedPoint) {
+        return { day: dayLabel, score: Math.round(matchedPoint.accuracy || 0) };
+      }
+
+      const dayGames = gameHistory.filter((g) => g.timestamp && g.timestamp.startsWith(dateStr));
+      if (dayGames.length > 0) {
+        const avg = Math.round(dayGames.reduce((acc, curr) => acc + (curr.score || 0), 0) / dayGames.length);
+        return { day: dayLabel, score: avg };
+      }
+
+      if (i === 6 && cognitiveMetrics.overallScore > 0) {
+        return { day: dayLabel, score: cognitiveMetrics.overallScore };
+      }
+
+      return { day: dayLabel, score: 0 };
+    });
+  }, [historyPoints, gameHistory, cognitiveMetrics.overallScore]);
+
   return (
     <div className="flex-1 flex flex-col justify-between bg-warm-50 dark:bg-stone-900 text-stone-800 dark:text-stone-100">
-      <Header title="Cognitive Overview & Trends" showBack />
+      <Header title={t('cognitive_health_title') || t('nav_cognitive')} showBack />
 
       <div className="flex-1 p-4 sm:p-5 space-y-4 overflow-y-auto custom-scrollbar">
         
@@ -57,7 +88,7 @@ export const CaretakerCognitiveScreen: React.FC = () => {
           <div className="flex items-start justify-between relative z-10">
             <div>
               <span className="text-xs uppercase font-bold tracking-wider text-teal-200">
-                Cognitive Engagement Index
+                {t('overall_score')}
               </span>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-4xl sm:text-5xl font-black tracking-tight">
@@ -66,7 +97,7 @@ export const CaretakerCognitiveScreen: React.FC = () => {
                 <span className="text-sm text-teal-200 font-semibold">/ 100</span>
               </div>
               <p className="text-xs text-teal-100 mt-1 font-medium">
-                Overall pattern index (Calculated across all 5 cognitive games)
+                Overall pattern index (Calculated across all 7 cognitive games)
               </p>
             </div>
 
@@ -153,26 +184,28 @@ export const CaretakerCognitiveScreen: React.FC = () => {
 
           {/* Simple Clean Bar / Column Trend */}
           <div className="flex items-end justify-between h-32 pt-4 px-2">
-            {WEEKLY_ANALYTICS_DATA.days.map((day, idx) => {
-              const score = WEEKLY_ANALYTICS_DATA.cognitiveScores[idx];
+            {weeklyTrend.map((item, idx) => {
+              const score = item.score;
               const heightPercent = (score / 100) * 100;
-              const isLatest = idx === WEEKLY_ANALYTICS_DATA.days.length - 1;
+              const isLatest = idx === weeklyTrend.length - 1;
 
               return (
-                <div key={day} className="flex flex-col items-center gap-1.5 flex-1">
-                  <span className="text-[10px] font-bold text-stone-500">{score}</span>
+                <div key={idx} className="flex flex-col items-center gap-1.5 flex-1">
+                  <span className="text-[10px] font-bold text-stone-500">{score > 0 ? score : '-'}</span>
                   <div className="w-6 sm:w-8 h-20 bg-stone-100 dark:bg-stone-800 rounded-t-xl overflow-hidden flex items-end">
                     <div 
                       className={`w-full rounded-t-xl transition-all ${
-                        isLatest 
+                        isLatest && score > 0
                           ? 'bg-teal-600 animate-pulse' 
-                          : 'bg-teal-400/80 dark:bg-teal-500/70 hover:bg-teal-500'
+                          : score > 0
+                          ? 'bg-teal-400/80 dark:bg-teal-500/70 hover:bg-teal-500'
+                          : 'bg-stone-200 dark:bg-stone-700'
                       }`}
-                      style={{ height: `${heightPercent}%` }}
+                      style={{ height: `${Math.max(4, heightPercent)}%` }}
                     />
                   </div>
                   <span className={`text-[10px] font-semibold ${isLatest ? 'text-teal-700 dark:text-teal-300 font-extrabold' : 'text-stone-400'}`}>
-                    {day}
+                    {item.day}
                   </span>
                 </div>
               );

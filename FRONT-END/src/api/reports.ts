@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { isRealPatientId, DemoModeApiError } from '../services/demoFallback';
 
 export interface CategoryReportSummary {
   category: string;
@@ -27,6 +28,9 @@ export interface WeeklyReportBackendResponse {
 
 export const reportsApi = {
   async getWeeklyReport(patientId: string, targetDate?: string): Promise<WeeklyReportBackendResponse> {
+    if (!isRealPatientId(patientId)) {
+      throw new DemoModeApiError(`Cannot get weekly report for demo patient ID: ${patientId}`);
+    }
     return apiClient<WeeklyReportBackendResponse>(`/patients/${patientId}/reports/weekly`, {
       method: 'GET',
       params: targetDate ? { target_date: targetDate } : undefined,

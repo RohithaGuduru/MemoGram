@@ -157,6 +157,7 @@ class PatientService:
             email=patient.user.email if patient.user else None,
             phone=patient.user.phone if patient.user else None,
             date_of_birth=patient.date_of_birth,
+            primary_language=patient.primary_language,
             preferred_language=patient.preferred_language,
             font_size=patient.font_size,
             timezone=patient.timezone,
@@ -183,6 +184,9 @@ class PatientService:
         if req.preferred_language is not None:
             patient.preferred_language = req.preferred_language
             patient.primary_language = req.preferred_language
+        elif req.primary_language is not None:
+            patient.primary_language = req.primary_language
+            patient.preferred_language = req.primary_language
         if req.font_size is not None:
             patient.font_size = req.font_size
         if req.timezone is not None:

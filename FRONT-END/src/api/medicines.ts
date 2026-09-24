@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { isRealPatientId, isDemoId, DemoModeApiError } from '../services/demoFallback';
 
 export type MedicationActionTypeValue = 'TOOK_IT' | 'REMIND_LATER';
 
@@ -64,6 +65,9 @@ export interface MedicationActionBackendResponse {
 
 export const medicinesApi = {
   async listPatientMedicines(patientId: string, activeOnly: boolean = false): Promise<MedicationBackendResponse[]> {
+    if (!isRealPatientId(patientId)) {
+      throw new DemoModeApiError(`Cannot list medicines for demo patient ID: ${patientId}`);
+    }
     return apiClient<MedicationBackendResponse[]>(`/medicines/patient/${patientId}`, {
       method: 'GET',
       params: activeOnly ? { active_only: true } : undefined,
@@ -71,6 +75,9 @@ export const medicinesApi = {
   },
 
   async createMedicine(patientId: string, payload: MedicationCreatePayload): Promise<MedicationBackendResponse> {
+    if (!isRealPatientId(patientId)) {
+      throw new DemoModeApiError(`Cannot create medicine for demo patient ID: ${patientId}`);
+    }
     return apiClient<MedicationBackendResponse>(`/medicines/patient/${patientId}`, {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -78,6 +85,9 @@ export const medicinesApi = {
   },
 
   async updateMedicine(id: string, payload: MedicationUpdatePayload): Promise<MedicationBackendResponse> {
+    if (isDemoId(id)) {
+      throw new DemoModeApiError(`Cannot update medicine with demo ID: ${id}`);
+    }
     return apiClient<MedicationBackendResponse>(`/medicines/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
@@ -85,6 +95,9 @@ export const medicinesApi = {
   },
 
   async deleteMedicine(id: string): Promise<void> {
+    if (isDemoId(id)) {
+      throw new DemoModeApiError(`Cannot delete medicine with demo ID: ${id}`);
+    }
     return apiClient<void>(`/medicines/${id}`, {
       method: 'DELETE',
     });
@@ -95,6 +108,9 @@ export const medicinesApi = {
     payload: MedicationActionPayload,
     patientId?: string
   ): Promise<MedicationActionBackendResponse> {
+    if (isDemoId(id) || (patientId && !isRealPatientId(patientId))) {
+      throw new DemoModeApiError(`Cannot record medication action with demo ID: ${id}`);
+    }
     return apiClient<MedicationActionBackendResponse>(`/medicines/${id}/action`, {
       method: 'POST',
       body: JSON.stringify(payload),

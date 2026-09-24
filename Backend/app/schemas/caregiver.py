@@ -15,6 +15,8 @@ class CaregiverCreate(BaseModel):
 class CaregiverUpdate(BaseModel):
     agency: Optional[str] = None
     notes: Optional[str] = None
+    preferred_language: Optional[str] = None
+    font_size: Optional[str] = None
 
 
 class CaregiverResponse(BaseModel):
@@ -25,6 +27,8 @@ class CaregiverResponse(BaseModel):
     phone: Optional[str] = None
     agency: Optional[str] = None
     notes: Optional[str] = None
+    preferred_language: Optional[str] = "en"
+    font_size: Optional[str] = "normal"
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

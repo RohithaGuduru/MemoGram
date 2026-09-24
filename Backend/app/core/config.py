@@ -30,6 +30,7 @@ class Settings(BaseSettings):
         "http://localhost:8080",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:8000",
+        "http://192.168.1.5:3000",
     ]
 
     @field_validator("CORS_ORIGINS", mode="before")
@@ -54,16 +55,22 @@ class Settings(BaseSettings):
     # Sarvam AI Configuration (Speech-To-Text, Translation & Regional Voices)
     SARVAM_API_KEY: Optional[str] = None
 
-    # Indic Parler-TTS Configuration (Self-hosted or hosted inference endpoint)
-    INDIC_PARLER_TTS_ENABLED: bool = False
+    # Indic Parler-TTS Configuration (Primary Regional TTS Provider)
+    INDIC_PARLER_TTS_ENABLED: bool = True
     INDIC_PARLER_TTS_MODEL: str = "ai4bharat/indic-parler-tts"
-    INDIC_PARLER_TTS_ENDPOINT: Optional[str] = None
+    INDIC_PARLER_TTS_ENDPOINT: Optional[str] = "http://localhost:8001/synthesize"
     INDIC_PARLER_TTS_API_KEY: Optional[str] = None
 
     # Additional TTS Providers (Azure Speech)
     TTS_PROVIDER_API_KEY: Optional[str] = None
     AZURE_SPEECH_KEY: Optional[str] = None
     AZURE_SPEECH_REGION: str = "eastus"
+
+    # Bhashini / ULCA Configuration (Regional Speech Services)
+    BHASHINI_USER_ID: Optional[str] = None
+    BHASHINI_API_KEY: Optional[str] = None
+    BHASHINI_PIPELINE_ID: Optional[str] = None
+    BHASHINI_INFERENCE_URL: Optional[str] = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

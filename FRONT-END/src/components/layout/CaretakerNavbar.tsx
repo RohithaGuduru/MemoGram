@@ -4,15 +4,15 @@ import { useApp } from '../../context/AppContext';
 import { ScreenId } from '../../types';
 
 export const CaretakerNavbar: React.FC = () => {
-  const { currentScreen, navigateTo } = useApp();
+  const { currentScreen, navigateTo, t } = useApp();
 
   const navItems: { screen: ScreenId; label: string; icon: React.ComponentType<any> }[] = [
-    { screen: 'caretaker_dashboard', label: 'Overview', icon: LayoutDashboard },
-    { screen: 'caretaker_medications', label: 'Meds', icon: Pill },
-    { screen: 'caretaker_cognitive', label: 'Cognitive', icon: Brain },
-    { screen: 'caretaker_reports', label: 'Reports', icon: FileText },
-    { screen: 'caretaker_patient', label: 'Patient', icon: UserCheck },
-    { screen: 'caretaker_settings', label: 'Settings', icon: Settings },
+    { screen: 'caretaker_dashboard', label: t('nav_overview'), icon: LayoutDashboard },
+    { screen: 'caretaker_medications', label: t('nav_meds'), icon: Pill },
+    { screen: 'caretaker_cognitive', label: t('nav_cognitive'), icon: Brain },
+    { screen: 'caretaker_reports', label: t('nav_reports'), icon: FileText },
+    { screen: 'caretaker_patient', label: t('nav_patient'), icon: UserCheck },
+    { screen: 'caretaker_settings', label: t('nav_settings'), icon: Settings },
   ];
 
   return (

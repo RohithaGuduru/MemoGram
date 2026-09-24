@@ -7,7 +7,9 @@ import {
   FamilyMember, 
   AlertItem, 
   FamilyStory,
-  GameScoreResult
+  GameScoreResult,
+  HydrationSettings,
+  Appointment
 } from '../types';
 
 export const DEMO_DATA_DISCLAIMER = {
@@ -15,6 +17,17 @@ export const DEMO_DATA_DISCLAIMER = {
   notice: 'Demo Activity Data — For prototype visualization only. Not real patient medical or cognitive measurements.',
   nonDiagnosticDisclaimer: 'These insights are for tracking activity and cognitive performance patterns and are not a medical diagnosis.'
 };
+
+export const INITIAL_APPOINTMENTS: Appointment[] = [
+  {
+    id: 'apt-1',
+    hospitalName: 'Apollo Multispeciality Hospital',
+    doctorName: 'Dr. Ramesh Sharma (Neurologist)',
+    date: '2026-09-25',
+    time: '10:30 AM',
+    notes: 'Routine neurological checkup & cognitive assessment',
+  }
+];
 
 export const INITIAL_PATIENT: PatientProfile = {
   id: 'patient-001',
@@ -26,14 +39,95 @@ export const INITIAL_PATIENT: PatientProfile = {
   photoUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&auto=format&fit=crop&q=80',
   primaryLanguage: 'en-IN',
   fallbackLanguage: 'hi-IN',
+  fontSize: 'normal',
   caretakerId: 'caretaker-001',
   caretakerName: 'Priya Sharma',
   emergencyContact: {
     name: 'Priya Sharma',
     relationship: 'Daughter',
     phone: '+91 98765 11223'
-  }
+  },
+  stepsToday: 1850,
+  stepGoal: 3000,
+  waterConsumedToday: 5,
+  hydrationSettings: {
+    dailyGoalGlasses: 8,
+    dailyGoal: 8,
+    unit: 'glasses',
+    startTime: '08:00 AM',
+    endTime: '08:00 PM',
+    reminderIntervalMinutes: 60,
+    enabled: true,
+  },
+  accessibility_preferences: {
+    hydration: {
+      dailyGoalGlasses: 8,
+      dailyGoal: 8,
+      unit: 'glasses',
+      startTime: '08:00 AM',
+      endTime: '08:00 PM',
+      reminderIntervalMinutes: 60,
+      enabled: true,
+    }
+  },
+  appointments: INITIAL_APPOINTMENTS
 };
+
+export const DEMO_PATIENTS: PatientProfile[] = [
+  INITIAL_PATIENT,
+  {
+    id: 'patient-002',
+    name: 'Meera Patel',
+    email: 'meera.patel68@example.com',
+    phone: '+91 98765 67890',
+    gender: 'Female',
+    age: 68,
+    photoUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80',
+    primaryLanguage: 'hi-IN',
+    fallbackLanguage: 'en-IN',
+    fontSize: 'normal',
+    caretakerId: 'caretaker-001',
+    caretakerName: 'Priya Sharma',
+    emergencyContact: {
+      name: 'Priya Sharma',
+      relationship: 'Daughter',
+      phone: '+91 98765 11223'
+    },
+    stepsToday: 800,
+    stepGoal: 3000,
+    waterConsumedToday: 1.5,
+    hydrationSettings: {
+      dailyGoalGlasses: 3,
+      dailyGoal: 3,
+      unit: 'litres',
+      startTime: '08:30 AM',
+      endTime: '07:30 PM',
+      reminderIntervalMinutes: 60,
+      enabled: true,
+    },
+    accessibility_preferences: {
+      hydration: {
+        dailyGoalGlasses: 3,
+        dailyGoal: 3,
+        unit: 'litres',
+        startTime: '08:30 AM',
+        endTime: '07:30 PM',
+        reminderIntervalMinutes: 60,
+        enabled: true,
+      }
+    },
+    appointments: [
+      {
+        id: 'apt-2',
+        hospitalName: 'City Care Clinic',
+        doctorName: 'Dr. Anita Desai (Geriatric Specialist)',
+        date: '2026-10-12',
+        time: '02:00 PM',
+        notes: 'General wellness check and vision review',
+      }
+    ]
+  }
+];
 
 export const INITIAL_CARETAKER: CaretakerProfile = {
   id: 'caretaker-001',
@@ -42,7 +136,8 @@ export const INITIAL_CARETAKER: CaretakerProfile = {
   phone: '+91 98765 11223',
   relationshipToPatient: 'Daughter',
   photoUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80',
-  language: 'en-IN'
+  language: 'en-IN',
+  fontSize: 'normal'
 };
 
 export const INITIAL_FAMILY_MEMBERS: FamilyMember[] = [
@@ -78,12 +173,15 @@ export const INITIAL_MEDICATIONS: Medication[] = [
     name: 'Donepezil',
     dosage: '1 tablet (5mg)',
     scheduleTime: '9:00 AM',
+    medicineType: 'Tablets',
+    frequency: 'Daily',
+    scheduledTimes: ['9:00 AM'],
     timeCategory: 'morning',
     remainingQuantity: 18,
     totalQuantity: 30,
     takenStatus: 'taken',
     takenAt: '9:05 AM today',
-    photoUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=200&auto=format&fit=crop&q=80',
+    photoUrl: undefined,
     instructions: 'Take 1 tablet with a glass of warm water right after breakfast.',
     prescribedBy: 'Dr. K. Nair (Neurologist)'
   },
@@ -92,11 +190,14 @@ export const INITIAL_MEDICATIONS: Medication[] = [
     name: 'Vitamin D3',
     dosage: '1 capsule (1000 IU)',
     scheduleTime: '1:00 PM',
+    medicineType: 'Capsules',
+    frequency: 'Daily',
+    scheduledTimes: ['1:00 PM'],
     timeCategory: 'afternoon',
     remainingQuantity: 24,
     totalQuantity: 30,
     takenStatus: 'pending',
-    photoUrl: 'https://images.unsplash.com/photo-1550572017-ed200f5e6343?w=200&auto=format&fit=crop&q=80',
+    photoUrl: undefined,
     instructions: 'Take 1 golden capsule with lunch meal.',
     prescribedBy: 'Dr. S. Verma'
   },
@@ -105,11 +206,14 @@ export const INITIAL_MEDICATIONS: Medication[] = [
     name: 'Memantine (Medication C)',
     dosage: '1 tablet (10mg)',
     scheduleTime: '8:00 PM',
+    medicineType: 'Tablets',
+    frequency: 'Daily',
+    scheduledTimes: ['8:00 PM'],
     timeCategory: 'evening',
     remainingQuantity: 12,
     totalQuantity: 30,
     takenStatus: 'pending',
-    photoUrl: 'https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=200&auto=format&fit=crop&q=80',
+    photoUrl: undefined,
     instructions: 'Take 1 tablet after dinner before bedtime.',
     prescribedBy: 'Dr. K. Nair (Neurologist)'
   },
@@ -118,11 +222,14 @@ export const INITIAL_MEDICATIONS: Medication[] = [
     name: 'Omega-3 Fish Oil',
     dosage: '1 softgel',
     scheduleTime: '9:00 PM',
+    medicineType: 'Capsules',
+    frequency: 'Daily',
+    scheduledTimes: ['9:00 PM'],
     timeCategory: 'night',
     remainingQuantity: 20,
     totalQuantity: 30,
     takenStatus: 'pending',
-    photoUrl: 'https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=200&auto=format&fit=crop&q=80',
+    photoUrl: undefined,
     instructions: 'Take 1 softgel with warm milk.',
     prescribedBy: 'Dr. S. Verma'
   }
@@ -135,9 +242,32 @@ export const INITIAL_COGNITIVE_METRICS: CognitiveMetrics = {
   overallScore: 77,
   trend: 'improving',
   weeklyActivityMinutes: 145,
+  cognitiveTimeTodayMinutes: 24,
   gamesPlayedToday: 2,
   sessionsCompleted: 4,
-  lastPlayedAt: 'Today, 11:30 AM'
+  lastPlayedAt: 'Today, 11:30 AM',
+  stepsToday: 1850,
+  stepGoal: 3000,
+  waterConsumedToday: 5,
+};
+
+export const DEMO_COGNITIVE_METRICS: Record<string, CognitiveMetrics> = {
+  'patient-001': INITIAL_COGNITIVE_METRICS,
+  'patient-002': {
+    attention: 85,
+    memory: 80,
+    patternRecognition: 82,
+    overallScore: 82,
+    trend: 'improving',
+    weeklyActivityMinutes: 80,
+    cognitiveTimeTodayMinutes: 15,
+    gamesPlayedToday: 1,
+    sessionsCompleted: 2,
+    lastPlayedAt: 'Today, 09:45 AM',
+    stepsToday: 800,
+    stepGoal: 3000,
+    waterConsumedToday: 1.5,
+  }
 };
 
 export const CORE_GAMES: GameMetadata[] = [
@@ -158,9 +288,9 @@ export const CORE_GAMES: GameMetadata[] = [
   },
   {
     id: 'routine',
-    name: 'Daily Routine in Sequence',
+    name: 'Daily Sequence + Journey Memory',
     category: 'Executive Function',
-    shortDescription: 'Arrange everyday morning and daytime activities in their natural chronological order.',
+    shortDescription: 'Arrange everyday routines, predict what comes next, and remember gentle journeys through town.',
     iconName: 'ListOrdered',
     colorScheme: {
       bg: 'bg-amber-50 dark:bg-amber-950/30',
@@ -205,7 +335,7 @@ export const CORE_GAMES: GameMetadata[] = [
     id: 'family_stories',
     name: 'Family Memories & Stories',
     category: 'Storytelling & Speech',
-    shortDescription: 'Speak warmly into your microphone to record cherished memories, festival joys, and life reflections.',
+    shortDescription: 'Recognize cherished family members and record warm memories, life stories, and audio reflections.',
     iconName: 'Mic',
     colorScheme: {
       bg: 'bg-rose-50 dark:bg-rose-950/30',
@@ -215,6 +345,36 @@ export const CORE_GAMES: GameMetadata[] = [
       accent: 'rose'
     },
     durationEstimate: '3–10 mins'
+  },
+  {
+    id: 'memory_mosaic',
+    name: 'Memory Mosaic — Build the Picture',
+    category: 'Pattern Recognition',
+    shortDescription: 'Look at the target picture and recreate the colorful mosaic using geometric pieces.',
+    iconName: 'Puzzle',
+    colorScheme: {
+      bg: 'bg-indigo-50 dark:bg-indigo-950/30',
+      border: 'border-indigo-200 dark:border-indigo-800',
+      badge: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300',
+      text: 'text-indigo-900 dark:text-indigo-100',
+      accent: 'indigo'
+    },
+    durationEstimate: '3–5 mins'
+  },
+  {
+    id: 'block_mind',
+    name: 'Block Mind',
+    category: 'Spatial Planning',
+    shortDescription: 'Place puzzle blocks into the grid to complete full horizontal rows or vertical columns to clear them.',
+    iconName: 'Boxes',
+    colorScheme: {
+      bg: 'bg-sky-50 dark:bg-sky-950/30',
+      border: 'border-sky-200 dark:border-sky-800',
+      badge: 'bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300',
+      text: 'text-sky-900 dark:text-sky-100',
+      accent: 'sky'
+    },
+    durationEstimate: '3–6 mins'
   }
 ];
 
@@ -356,6 +516,34 @@ export const INITIAL_GAME_HISTORY: GameScoreResult[] = [
   }
 ];
 
+export const DEMO_PATIENT_GAME_HISTORY: Record<string, GameScoreResult[]> = {
+  'patient-001': INITIAL_GAME_HISTORY,
+  'patient-002': [
+    {
+      gameId: 'cultural_match',
+      score: 92,
+      attempts: 1,
+      mistakes: 1,
+      hintsUsed: 0,
+      timeSpentSeconds: 85,
+      timestamp: 'Today, 09:45 AM',
+      difficulty: 'standard',
+      nextDifficultyRecommendation: 'standard'
+    },
+    {
+      gameId: 'groceries',
+      score: 88,
+      attempts: 1,
+      mistakes: 1,
+      hintsUsed: 1,
+      timeSpentSeconds: 55,
+      timestamp: 'Yesterday, 4:15 PM',
+      difficulty: 'standard',
+      nextDifficultyRecommendation: 'standard'
+    }
+  ]
+};
+
 export const WEEKLY_ANALYTICS_DATA = {
   days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
   cognitiveScores: [72, 74, 73, 76, 75, 78, 77],
@@ -370,4 +558,13 @@ export const WEEKLY_ANALYTICS_DATA = {
     highlightStrengths: ['High attention retention in visual tasks', 'Consistent morning medication schedule'],
     gentleEncouragements: ['Encourage afternoon hydration & puzzle session', 'Continue recording voice stories on weekends']
   }
+};
+
+export const INITIAL_HYDRATION_SETTINGS: HydrationSettings = {
+  dailyGoalGlasses: 8,
+  unit: 'glasses',
+  startTime: '08:00 AM',
+  endTime: '08:00 PM',
+  reminderIntervalMinutes: 60,
+  enabled: true,
 };

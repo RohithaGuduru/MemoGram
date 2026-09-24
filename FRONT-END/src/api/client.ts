@@ -3,8 +3,37 @@
  * Connects directly to the Memogram FastAPI Backend.
  */
 
-const rawBaseUrl = ((import.meta as any).env?.VITE_API_BASE_URL) || 'http://localhost:8000/api/v1';
-export const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
+const API_BASE_URL_KEY = 'memogram_api_base_url';
+
+export function getApiBaseUrl(): string {
+  const custom = typeof window !== 'undefined' ? localStorage.getItem(API_BASE_URL_KEY) : null;
+  if (custom && custom.trim()) {
+    const trimmed = custom.trim();
+    return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+  }
+  const envUrl = ((import.meta as any).env?.VITE_API_BASE_URL) as string | undefined;
+  if (envUrl && envUrl.trim()) {
+    const trimmed = envUrl.trim();
+    return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+  }
+  return 'http://localhost:8000/api/v1';
+}
+
+export function setApiBaseUrl(url: string | null): void {
+  if (!url || !url.trim()) {
+    localStorage.removeItem(API_BASE_URL_KEY);
+  } else {
+    localStorage.setItem(API_BASE_URL_KEY, url.trim());
+  }
+}
+
+// Global debug access for physical device testing
+if (typeof window !== 'undefined') {
+  (window as any).getMemogramServerUrl = getApiBaseUrl;
+  (window as any).setMemogramServerUrl = setApiBaseUrl;
+}
+
+export const API_BASE_URL = getApiBaseUrl();
 
 const TOKEN_KEY = 'memogram_access_token';
 const REFRESH_TOKEN_KEY = 'memogram_refresh_token';
@@ -84,7 +113,7 @@ async function tryRefreshToken(): Promise<string | null> {
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    const res = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: currentRefresh }),
@@ -109,13 +138,24 @@ export interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
 }
 
+import { DemoModeApiError } from '../services/demoFallback';
+
+const DEMO_PATH_PATTERN = /(patient-\d+|demo-[a-z0-9_-]+|med-\d+|fam-\d+|apt-\d+|caretaker-\d+|alt-\d+|story-\d+|ai-\d+)(\/|$|\?)/i;
+
 export async function apiClient<T = any>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> {
+  // Defense-in-depth: Never send recognized fake demo entity IDs to backend endpoints
+  if (DEMO_PATH_PATTERN.test(endpoint) || endpoint.includes('patient-001')) {
+    console.warn(`[apiClient] Blocked network request for demo entity ID in endpoint: ${endpoint}`);
+    throw new DemoModeApiError(`Network request blocked for demo entity ID in endpoint: ${endpoint}`);
+  }
+
   const { params, skipAuth = false, headers = {}, ...customOptions } = options;
 
-  let url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+  const baseUrl = getApiBaseUrl();
+  let url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
 
   if (params) {
     const searchParams = new URLSearchParams();

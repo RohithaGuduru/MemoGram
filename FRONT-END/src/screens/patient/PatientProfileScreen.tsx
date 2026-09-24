@@ -17,7 +17,7 @@ import { SpeakTextButton } from '../../components/common/SpeakTextButton';
 import { getLanguageInfo, t } from '../../services/languageCapabilities';
 
 export const PatientProfileScreen: React.FC = () => {
-  const { patient, familyMembers, openSosModal, primaryLanguage, fallbackLanguage, showToast } = useApp();
+  const { patient, familyMembers, openSosModal, primaryLanguage, showToast, t } = useApp();
   const langInfo = getLanguageInfo(primaryLanguage);
 
   const profileSummaryAudio = `Profile for ${patient.name}. Age ${patient.age}. Emergency contact is your daughter ${patient.emergencyContact.name}. You have ${familyMembers.length} family members in your circle.`;
@@ -26,9 +26,15 @@ export const PatientProfileScreen: React.FC = () => {
     showToast(`Calling ${member.name} (${member.relationship})... (Simulated)`, 'info', 'Family Call');
   };
 
+  const localizedGender = patient.gender?.toLowerCase() === 'female' 
+    ? t('gender_female') 
+    : patient.gender?.toLowerCase() === 'male' 
+      ? t('gender_male') 
+      : t('gender_other');
+
   return (
     <div className="flex-1 flex flex-col justify-between bg-warm-50 dark:bg-stone-900 text-stone-800 dark:text-stone-100">
-      <Header title={t('nav_profile', primaryLanguage, fallbackLanguage)} audioPrompt={profileSummaryAudio} showSOS />
+      <Header title={t('nav_profile')} audioPrompt={profileSummaryAudio} showSOS />
 
       <div className="flex-1 p-4 sm:p-5 space-y-4 overflow-y-auto custom-scrollbar">
         
@@ -44,7 +50,7 @@ export const PatientProfileScreen: React.FC = () => {
             {patient.name}
           </h2>
           <p className="text-sm text-stone-500 font-semibold mt-0.5">
-            {patient.age} years old • {patient.gender}
+            {t('age_years_old', { age: patient.age })} • {localizedGender}
           </p>
 
           <div className="mt-4 flex items-center justify-center gap-2">
@@ -62,14 +68,14 @@ export const PatientProfileScreen: React.FC = () => {
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-extrabold uppercase tracking-wider text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
               <ShieldAlert size={16} />
-              <span>Primary Emergency Contact</span>
+              <span>{t('primary_emergency_contact')}</span>
             </span>
             <button
               type="button"
               onClick={openSosModal}
-              className="text-xs font-extrabold text-rose-700 dark:text-rose-400 hover:underline"
+              className="text-xs font-extrabold text-rose-700 dark:text-rose-400 hover:underline cursor-pointer"
             >
-              Open SOS
+              {t('open_sos')}
             </button>
           </div>
 
@@ -84,10 +90,10 @@ export const PatientProfileScreen: React.FC = () => {
             <button
               type="button"
               onClick={() => handleCallFamily(patient.emergencyContact)}
-              className="px-4 py-2 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-rose-600/20"
+              className="px-4 py-2 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-rose-600/20 cursor-pointer"
             >
               <PhoneCall size={15} />
-              <span>Call</span>
+              <span>{t('call_action')}</span>
             </button>
           </div>
         </div>
@@ -98,10 +104,10 @@ export const PatientProfileScreen: React.FC = () => {
             <div className="flex items-center gap-2">
               <Users size={18} className="text-teal-600" />
               <h3 className="font-extrabold text-base text-stone-900 dark:text-stone-100">
-                Family Circle
+                {t('family_circle')}
               </h3>
             </div>
-            <span className="text-xs text-stone-400 font-semibold">{familyMembers.length} members</span>
+            <span className="text-xs text-stone-400 font-semibold">{t('family_members_count', { count: familyMembers.length })}</span>
           </div>
 
           <div className="space-y-2.5">

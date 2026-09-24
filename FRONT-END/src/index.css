@@ -7,19 +7,25 @@
     --font-scale: 1;
   }
 
-  [data-font-size="normal"] {
+  [data-font-size="normal"],
+  html[data-font-size="normal"],
+  body[data-font-size="normal"] {
     --font-scale: 1;
     font-size: 16px;
   }
 
-  [data-font-size="large"] {
-    --font-scale: 1.15;
-    font-size: 18.5px;
+  [data-font-size="large"],
+  html[data-font-size="large"],
+  body[data-font-size="large"] {
+    --font-scale: 1.125;
+    font-size: 18px;
   }
 
-  [data-font-size="extra-large"] {
-    --font-scale: 1.35;
-    font-size: 21.5px;
+  [data-font-size="extra-large"],
+  html[data-font-size="extra-large"],
+  body[data-font-size="extra-large"] {
+    --font-scale: 1.28;
+    font-size: 20.5px;
   }
 
   body {
@@ -72,3 +78,33 @@
 button, a, input, select {
   min-height: 40px;
 }
+
+/* Accessibility responsive protection for Large & Extra Large text */
+[data-font-size="large"] button,
+[data-font-size="extra-large"] button {
+  min-height: 46px;
+  word-break: break-word;
+}
+
+[data-font-size="large"] p,
+[data-font-size="extra-large"] p,
+[data-font-size="large"] span,
+[data-font-size="extra-large"] span {
+  overflow-wrap: break-word;
+}
+
+[data-font-size="large"] [class*="text-["],
+[data-font-size="large"] .text-\[9px\],
+[data-font-size="large"] .text-\[10px\],
+[data-font-size="large"] .text-\[11px\] {
+  font-size: 13px !important;
+}
+
+[data-font-size="extra-large"] [class*="text-["],
+[data-font-size="extra-large"] .text-\[9px\],
+[data-font-size="extra-large"] .text-\[10px\],
+[data-font-size="extra-large"] .text-\[11px\] {
+  font-size: 14.5px !important;
+}
+
+

@@ -93,7 +93,7 @@ export const WelcomeScreen: React.FC = () => {
         </button>
 
         <p className="text-center text-xs text-stone-400 dark:text-stone-500 mt-3 font-medium">
-          7 Northeast & Indian Languages Supported • Voice Ready
+          8 Northeast & Indian Languages Supported • Voice Ready
         </p>
       </div>
 

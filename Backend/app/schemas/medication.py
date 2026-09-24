@@ -8,7 +8,7 @@ class MedicationCreate(BaseModel):
     dosage: str = Field(..., description="e.g. 10mg, 1 tablet")
     time_of_day: str = Field(..., description="e.g. 08:00 AM, After dinner")
     frequency: str = Field(default="daily", description="e.g. daily, twice_daily, weekly")
-    start_date: date
+    start_date: date = Field(default_factory=date.today, description="Start date of medication course")
     end_date: Optional[date] = None
     instructions: Optional[str] = None
     photo_url: Optional[str] = None

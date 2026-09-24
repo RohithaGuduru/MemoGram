@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { isRealPatientId, isDemoId, DemoModeApiError } from '../services/demoFallback';
 import { GameCategoryType } from './games';
 
 export type SessionStatusType = 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED';
@@ -78,6 +79,9 @@ export interface GameResultBackendResponse {
 
 export const gameSessionsApi = {
   async startSession(gameId: string, payload: GameSessionCreatePayload): Promise<GameSessionBackendResponse> {
+    if (!isRealPatientId(payload.patient_id)) {
+      throw new DemoModeApiError(`Cannot start backend game session for demo patient ID: ${payload.patient_id}`);
+    }
     return apiClient<GameSessionBackendResponse>(`/games/${gameId}/sessions`, {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -85,6 +89,9 @@ export const gameSessionsApi = {
   },
 
   async submitResult(sessionId: string, payload: GameResultSubmitPayload): Promise<GameResultBackendResponse> {
+    if (isDemoId(sessionId)) {
+      throw new DemoModeApiError(`Cannot submit game result for demo session ID: ${sessionId}`);
+    }
     return apiClient<GameResultBackendResponse>(`/games/sessions/${sessionId}/result`, {
       method: 'POST',
       body: JSON.stringify(payload),

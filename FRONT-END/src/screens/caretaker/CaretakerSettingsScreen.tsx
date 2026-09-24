@@ -22,19 +22,44 @@ import { LanguageSelectorModal } from '../../components/common/LanguageSelectorM
 import { getLanguageInfo } from '../../services/languageCapabilities';
 import { FontSizeSetting } from '../../types';
 import { authApi } from '../../api';
+import { getApiBaseUrl, setApiBaseUrl } from '../../api/client';
 
 export const CaretakerSettingsScreen: React.FC = () => {
   const { 
     accessibility, 
     updateAccessibility, 
+    caretakerLanguage,
+    setCaretakerLanguage,
+    caretakerFontSize,
+    setCaretakerFontSize,
     primaryLanguage, 
     setRole, 
     navigateTo, 
-    showToast 
+    showToast,
+    t
   } = useApp();
 
   const [isLangModalOpen, setIsLangModalOpen] = useState(false);
-  const langInfo = getLanguageInfo(primaryLanguage);
+  const [devTapCount, setDevTapCount] = useState(0);
+  const [isDevServerModalOpen, setIsDevServerModalOpen] = useState(false);
+  const [customServerUrl, setCustomServerUrl] = useState(() => getApiBaseUrl());
+  const currentLang = caretakerLanguage || primaryLanguage;
+  const langInfo = getLanguageInfo(currentLang);
+
+  const handleAboutTap = () => {
+    const next = devTapCount + 1;
+    if (next >= 5) {
+      setDevTapCount(0);
+      setCustomServerUrl(getApiBaseUrl());
+      setIsDevServerModalOpen(true);
+    } else {
+      setDevTapCount(next);
+      if (next === 1) {
+        showToast('Memogram v1.0.0 Prototype — Designed for senior cognitive wellness.', 'info', 'About Memogram');
+      }
+      setTimeout(() => setDevTapCount(0), 3000);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -47,7 +72,7 @@ export const CaretakerSettingsScreen: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col justify-between bg-warm-50 dark:bg-stone-900 text-stone-800 dark:text-stone-100">
-      <Header title="Caretaker Settings" showBack />
+      <Header title={t('nav_settings')} showBack />
 
       <div className="flex-1 p-4 sm:p-5 space-y-4 overflow-y-auto custom-scrollbar">
         
@@ -58,7 +83,7 @@ export const CaretakerSettingsScreen: React.FC = () => {
               <Sparkles size={16} />
             </div>
             <h3 className="font-extrabold text-sm text-stone-900 dark:text-stone-100 uppercase tracking-wider">
-              Accessibility & Appearance
+              {t('accessibility_settings')}
             </h3>
           </div>
 
@@ -70,7 +95,7 @@ export const CaretakerSettingsScreen: React.FC = () => {
             <div className="flex items-center gap-3">
               <Globe size={18} className="text-teal-600" />
               <div>
-                <p className="font-bold text-xs text-stone-900 dark:text-stone-100">Language System</p>
+                <p className="font-bold text-xs text-stone-900 dark:text-stone-100">{t('language_settings')}</p>
                 <p className="text-[11px] text-stone-500">{langInfo.name} ({langInfo.nativeName})</p>
               </div>
             </div>
@@ -82,10 +107,10 @@ export const CaretakerSettingsScreen: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Type size={18} className="text-teal-600" />
-                <span className="font-bold text-xs text-stone-900 dark:text-stone-100">Display Text Size</span>
+                <span className="font-bold text-xs text-stone-900 dark:text-stone-100">{t('font_size_preference')}</span>
               </div>
               <span className="text-[11px] font-bold text-teal-700 dark:text-teal-300 capitalize">
-                {accessibility.fontSize}
+                {caretakerFontSize}
               </span>
             </div>
 
@@ -94,14 +119,14 @@ export const CaretakerSettingsScreen: React.FC = () => {
                 <button
                   key={f}
                   type="button"
-                  onClick={() => updateAccessibility({ fontSize: f })}
-                  className={`py-2 text-xs rounded-xl border font-bold transition-all ${
-                    accessibility.fontSize === f
+                  onClick={() => setCaretakerFontSize(f)}
+                  className={`py-2 text-xs rounded-xl border font-bold transition-all cursor-pointer ${
+                    caretakerFontSize === f
                       ? 'border-teal-600 bg-teal-600 text-white shadow-xs'
                       : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300'
                   }`}
                 >
-                  {f === 'normal' ? 'Normal' : f === 'large' ? 'Large' : 'XL'}
+                  {f === 'normal' ? t('font_normal') : f === 'large' ? t('font_large') : t('font_extralarge')}
                 </button>
               ))}
             </div>
@@ -161,7 +186,7 @@ export const CaretakerSettingsScreen: React.FC = () => {
             <div className="flex items-center gap-3">
               <Bell size={18} className="text-teal-600" />
               <div>
-                <p className="font-bold text-stone-900 dark:text-stone-100">Notifications & Push Alerts</p>
+                <p className="font-bold text-stone-900 dark:text-stone-100">{t('settings_notifs_alerts')}</p>
                 <p className="text-[11px] text-stone-500">Active on this device</p>
               </div>
             </div>
@@ -183,7 +208,7 @@ export const CaretakerSettingsScreen: React.FC = () => {
           </div>
 
           <div 
-            onClick={() => showToast('Memogram v1.0.0 Prototype — Designed for senior cognitive wellness.', 'info', 'About Memogram')}
+            onClick={handleAboutTap}
             className="flex items-center justify-between p-3 rounded-2xl bg-stone-50 dark:bg-stone-800/60 hover:bg-stone-100 cursor-pointer"
           >
             <div className="flex items-center gap-3">
@@ -219,7 +244,7 @@ export const CaretakerSettingsScreen: React.FC = () => {
             className="w-full py-3.5 px-4 rounded-2xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-750 text-rose-600 dark:text-rose-400 font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
             <LogOut size={16} />
-            <span>Log Out</span>
+            <span>{t('btn_logout')}</span>
           </button>
         </div>
 
@@ -228,7 +253,67 @@ export const CaretakerSettingsScreen: React.FC = () => {
       <LanguageSelectorModal
         isOpen={isLangModalOpen}
         onClose={() => setIsLangModalOpen(false)}
+        currentLanguage={caretakerLanguage}
+        onSelectLanguage={setCaretakerLanguage}
       />
+
+      {/* Developer Server Configuration Modal (Discreet 5-tap access) */}
+      {isDevServerModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-stone-850 rounded-3xl p-5 w-full max-w-sm border border-stone-200 dark:border-stone-800 shadow-xl space-y-4">
+            <h3 className="font-bold text-sm text-stone-900 dark:text-stone-100">
+              Developer: Backend Server URL
+            </h3>
+            <p className="text-xs text-stone-500">
+              Set the API URL for physical Android device testing (e.g. <code>http://192.168.1.X:8000/api/v1</code>).
+            </p>
+            <div>
+              <label className="text-[11px] font-semibold text-stone-600 dark:text-stone-400 block mb-1">
+                API Base URL
+              </label>
+              <input
+                type="text"
+                value={customServerUrl}
+                onChange={(e) => setCustomServerUrl(e.target.value)}
+                placeholder="http://192.168.x.x:8000/api/v1"
+                className="w-full text-xs p-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-100 font-mono"
+              />
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setApiBaseUrl(null);
+                  setCustomServerUrl(getApiBaseUrl());
+                  setIsDevServerModalOpen(false);
+                  showToast('Reset to default API URL', 'info');
+                }}
+                className="px-3 py-2 text-xs font-semibold rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsDevServerModalOpen(false)}
+                className="px-3 py-2 text-xs font-semibold rounded-xl border border-stone-300 dark:border-stone-700 text-stone-600 dark:text-stone-400"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setApiBaseUrl(customServerUrl);
+                  setIsDevServerModalOpen(false);
+                  showToast(`API URL updated: ${customServerUrl}`, 'success');
+                }}
+                className="px-3 py-2 text-xs font-semibold rounded-xl bg-teal-600 text-white"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <CaretakerNavbar />
     </div>

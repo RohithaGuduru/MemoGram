@@ -20,9 +20,8 @@ export const PatientMedsScreen: React.FC = () => {
     markMedicationTaken, 
     snoozeMedication, 
     patient, 
-    primaryLanguage, 
-    fallbackLanguage,
-    showToast 
+    showToast,
+    t 
   } = useApp();
 
   const [waterGlasses, setWaterGlasses] = useState(4);
@@ -35,12 +34,12 @@ export const PatientMedsScreen: React.FC = () => {
     setWaterGlasses(prev => prev + 1);
     setWaterAcknowledged(true);
     speechService.playChime('success_bell');
-    showToast(t('water_completed_confirmation', primaryLanguage, fallbackLanguage), 'success', 'Hydration');
+    showToast(t('water_completed_confirmation'), 'success', 'Hydration');
   };
 
   return (
     <div className="flex-1 flex flex-col justify-between bg-warm-50 dark:bg-stone-900 text-stone-800 dark:text-stone-100">
-      <Header title={t('nav_medicines', primaryLanguage, fallbackLanguage)} audioPrompt={pageAudioIntro} showSOS />
+      <Header title={t('nav_medicines')} audioPrompt={pageAudioIntro} showSOS />
 
       <div className="flex-1 p-4 sm:p-5 space-y-4 overflow-y-auto custom-scrollbar">
         
@@ -52,10 +51,10 @@ export const PatientMedsScreen: React.FC = () => {
             </div>
             <div>
               <h2 className="text-base font-extrabold text-stone-900 dark:text-stone-100">
-                {t('todays_medicines', primaryLanguage, fallbackLanguage)}
+                {t('todays_medicines')}
               </h2>
               <p className="text-xs text-stone-500 font-medium">
-                {totalTaken} of {medications.length} doses taken
+                {t('doses_taken_count', { taken: totalTaken, total: medications.length })}
               </p>
             </div>
           </div>
@@ -76,16 +75,16 @@ export const PatientMedsScreen: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-base font-extrabold text-sky-950 dark:text-sky-100">
-                  {t('drink_water_title', primaryLanguage, fallbackLanguage)}
+                  {t('drink_water_title')}
                 </h3>
                 <p className="text-xs text-sky-900/80 dark:text-sky-300 font-medium mt-0.5">
-                  {t('drink_water_prompt', primaryLanguage, fallbackLanguage)}
+                  {t('drink_water_prompt')}
                 </p>
               </div>
             </div>
 
             <SpeakTextButton
-              textToSpeak={t('drink_water_prompt', primaryLanguage, fallbackLanguage)}
+              textToSpeak={t('drink_water_prompt')}
               variant="icon-only"
               size="sm"
             />
@@ -97,7 +96,7 @@ export const PatientMedsScreen: React.FC = () => {
               onClick={handleDrinkWater}
               className="w-full py-3.5 px-4 rounded-2xl bg-sky-600 hover:bg-sky-700 active:scale-98 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md shadow-sky-600/20 transition-all cursor-pointer"
             >
-              <span>{t('i_drank_water', primaryLanguage, fallbackLanguage)}</span>
+              <span>{t('i_drank_water')}</span>
             </button>
           </div>
         </div>
@@ -119,17 +118,28 @@ export const PatientMedsScreen: React.FC = () => {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
-                    <img
-                      src={med.photoUrl || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=200&auto=format&fit=crop&q=80'}
-                      alt={med.name}
-                      className="w-16 h-16 rounded-2xl object-cover ring-2 ring-stone-200 dark:ring-stone-700 flex-shrink-0"
-                    />
+                    {med.photoUrl ? (
+                      <img
+                        src={med.photoUrl}
+                        alt={med.name}
+                        className="w-16 h-16 rounded-2xl object-cover ring-2 ring-stone-200 dark:ring-stone-700 flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-2xl bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 flex items-center justify-center flex-shrink-0">
+                        <Pill size={32} />
+                      </div>
+                    )}
 
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="text-lg sm:text-xl font-extrabold text-stone-900 dark:text-stone-100">
                           {med.name}
                         </h3>
+                        {med.medicineType && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
+                            {med.medicineType}
+                          </span>
+                        )}
                         <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-teal-100 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300">
                           {med.dosage}
                         </span>
@@ -141,7 +151,7 @@ export const PatientMedsScreen: React.FC = () => {
                           {med.scheduleTime}
                         </span>
                         <span>•</span>
-                        <span>{isTaken ? `Taken (${med.takenAt || '9:05 AM'})` : 'Pending'}</span>
+                        <span>{isTaken ? `${t('status_taken')} (${med.takenAt || '9:05 AM'})` : t('status_pending')}</span>
                       </div>
                     </div>
                   </div>
@@ -157,7 +167,7 @@ export const PatientMedsScreen: React.FC = () => {
                 {/* Instructions Box */}
                 <div className="mt-3 p-3 rounded-2xl bg-stone-50 dark:bg-stone-800/80 border border-stone-100 dark:border-stone-700 text-xs sm:text-sm text-stone-700 dark:text-stone-300 font-medium">
                   <span className="font-bold text-stone-900 dark:text-stone-100 block mb-0.5">
-                    Instructions:
+                    {t('instructions_label')}
                   </span>
                   {med.instructions}
                 </div>
@@ -172,7 +182,7 @@ export const PatientMedsScreen: React.FC = () => {
                         className="flex-1 py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-base flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
                       >
                         <CheckCircle2 size={20} />
-                        <span>Took it</span>
+                        <span>{t('took_it')}</span>
                       </button>
 
                       <button
@@ -180,13 +190,13 @@ export const PatientMedsScreen: React.FC = () => {
                         onClick={() => snoozeMedication(med.id, 15)}
                         className="py-3.5 px-4 rounded-2xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-bold text-sm transition-colors cursor-pointer"
                       >
-                        Remind later
+                        {t('remind_me_later')}
                       </button>
                     </>
                   ) : (
                     <div className="w-full flex items-center justify-center gap-2 text-sm font-extrabold text-emerald-800 dark:text-emerald-300 py-2.5 bg-emerald-100/80 dark:bg-emerald-950/60 rounded-2xl">
                       <CheckCircle2 size={18} />
-                      <span>Medicine marked as taken for today</span>
+                      <span>{t('medicine_taken_confirmation')}</span>
                     </div>
                   )}
                 </div>

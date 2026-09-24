@@ -1,6 +1,10 @@
-from datetime import datetime, timezone
+import hashlib
+import hmac
+import secrets
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.security import (
@@ -13,7 +17,18 @@ from app.core.security import (
 from app.models.user import User
 from app.models.caregiver import Caregiver
 from app.models.patient import Patient
-from app.schemas.auth import RegisterRequest, LoginRequest, Token, UserResponse
+from app.models.password_reset import PasswordResetToken
+from app.services.email_service import EmailService
+from app.schemas.auth import (
+    RegisterRequest,
+    LoginRequest,
+    Token,
+    UserResponse,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
+)
 from app.schemas.memogram import GoogleAuthRequest
 from app.utils.enums import UserRole
 
@@ -222,3 +237,131 @@ class AuthService:
             caregiver_id=caregiver_id,
             patient_id=patient_id,
         )
+
+    @classmethod
+    def initiate_password_reset(cls, db: Session, req: ForgotPasswordRequest) -> ForgotPasswordResponse:
+        """
+        Initiates a password reset workflow:
+        - Normalizes email.
+        - If account exists: invalidates prior active tokens, creates single-use 6-digit OTP (hashed),
+          sets 10-minute expiry, and dispatches via EmailService.
+        - Unconditionally returns a generic response to prevent account enumeration.
+        """
+        norm_email = req.email.lower().strip()
+        user = db.query(User).filter(func.lower(User.email) == norm_email).first()
+
+        if user and user.is_active:
+            # 1. Invalidate any existing unused tokens for this user
+            db.query(PasswordResetToken).filter(
+                PasswordResetToken.user_id == user.id,
+                PasswordResetToken.is_used == False,
+            ).update({"is_used": True})
+
+            # 2. Generate cryptographically secure 6-digit numeric OTP
+            otp = f"{secrets.randbelow(1000000):06d}"
+
+            # 3. Hash the OTP for secure DB storage (never store raw OTP)
+            otp_hash = hashlib.sha256(otp.encode("utf-8")).hexdigest()
+
+            # 4. Create token record with 10-minute validity
+            now = datetime.now(timezone.utc)
+            reset_record = PasswordResetToken(
+                user_id=user.id,
+                otp_hash=otp_hash,
+                expires_at=now + timedelta(minutes=10),
+                is_used=False,
+                attempts_count=0,
+                created_at=now,
+            )
+            db.add(reset_record)
+            db.commit()
+
+            # 5. Dispatch email
+            EmailService.send_password_reset_email(to_email=user.email or norm_email, otp=otp)
+
+        return ForgotPasswordResponse(
+            message="If an account exists for this email, a reset code has been sent."
+        )
+
+    @classmethod
+    def reset_password_with_otp(cls, db: Session, req: ResetPasswordRequest) -> ResetPasswordResponse:
+        """
+        Validates OTP and updates user's password:
+        - Validates user existence and active status.
+        - Validates that an active, unexpired, unused token exists.
+        - Verifies OTP hash using timing-attack resistant comparison.
+        - Updates hashed_password and invalidates the token.
+        """
+        norm_email = req.email.lower().strip()
+        user = db.query(User).filter(func.lower(User.email) == norm_email).first()
+
+        if not user or not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid email or reset code.",
+            )
+
+        # Retrieve the latest active reset token for this user
+        token_record = (
+            db.query(PasswordResetToken)
+            .filter(
+                PasswordResetToken.user_id == user.id,
+                PasswordResetToken.is_used == False,
+            )
+            .order_by(PasswordResetToken.created_at.desc())
+            .first()
+        )
+
+        if not token_record:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired reset code. Please request a new one.",
+            )
+
+        # Check expiration
+        now = datetime.now(timezone.utc)
+        expires_at = token_record.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+        if expires_at < now:
+            token_record.is_used = True
+            db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Reset code has expired. Please request a new code.",
+            )
+
+        # Check attempt limits (max 5 failed attempts per token)
+        if token_record.attempts_count >= 5:
+            token_record.is_used = True
+            db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Too many invalid attempts. Please request a new code.",
+            )
+
+        # Verify OTP using constant-time hash comparison
+        provided_hash = hashlib.sha256(req.otp.strip().encode("utf-8")).hexdigest()
+        if not hmac.compare_digest(provided_hash, token_record.otp_hash):
+            token_record.attempts_count += 1
+            db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid reset code. Please try again.",
+            )
+
+        # Validate password strength
+        if len(req.new_password) < 6:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at least 6 characters long.",
+            )
+
+        # Update password and invalidate token
+        user.hashed_password = get_password_hash(req.new_password)
+        token_record.is_used = True
+        db.commit()
+
+        return ResetPasswordResponse(message="Password reset successful.")
+

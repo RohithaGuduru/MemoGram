@@ -101,6 +101,7 @@ class VoiceProcessRequest(BaseModel):
     patient_id: str
     language: str = "as"
     audio_base64: Optional[str] = None
+    audio_content_type: Optional[str] = "audio/wav"
     transcript_text: Optional[str] = None
     session_context: Optional[Dict[str, Any]] = None
 

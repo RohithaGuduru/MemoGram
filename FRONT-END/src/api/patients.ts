@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { isRealPatientId, DemoModeApiError } from '../services/demoFallback';
 
 export interface PatientBackendResponse {
   id: string;
@@ -39,7 +40,8 @@ export interface PatientDetailBackendResponse extends PatientBackendResponse {
 }
 
 export interface PatientCreatePayload {
-  name: string;
+  name?: string;
+  full_name?: string;
   email?: string;
   phone?: string;
   date_of_birth?: string;
@@ -55,6 +57,7 @@ export interface PatientCreatePayload {
 }
 
 export interface PatientUpdatePayload {
+  full_name?: string;
   primary_language?: string;
   fallback_language?: string;
   preferred_language?: string;
@@ -70,9 +73,14 @@ export interface PatientUpdatePayload {
 
 export const patientsApi = {
   async createPatient(payload: PatientCreatePayload): Promise<PatientBackendResponse> {
+    const fullName = payload.full_name || payload.name || 'Patient';
+    const body = {
+      ...payload,
+      full_name: fullName,
+    };
     return apiClient<PatientBackendResponse>('/patients', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
     });
   },
 
@@ -83,12 +91,18 @@ export const patientsApi = {
   },
 
   async getPatient(id: string): Promise<PatientDetailBackendResponse> {
+    if (!isRealPatientId(id)) {
+      throw new DemoModeApiError(`Cannot fetch patient from backend with demo ID: ${id}`);
+    }
     return apiClient<PatientDetailBackendResponse>(`/patients/${id}`, {
       method: 'GET',
     });
   },
 
   async updatePatient(id: string, payload: PatientUpdatePayload): Promise<PatientDetailBackendResponse> {
+    if (!isRealPatientId(id)) {
+      throw new DemoModeApiError(`Cannot update patient on backend with demo ID: ${id}`);
+    }
     return apiClient<PatientDetailBackendResponse>(`/patients/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),

@@ -8,6 +8,10 @@ from app.schemas.auth import (
     RefreshTokenRequest,
     Token,
     UserResponse,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
 )
 from app.schemas.memogram import GoogleAuthRequest, LogoutResponse
 from app.services.auth_service import AuthService
@@ -68,3 +72,22 @@ def get_current_user_profile(
 ):
     """Retrieves profile information and role context for the authenticated user."""
     return AuthService.get_user_profile(db, current_user)
+
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+def forgot_password(
+    req: ForgotPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    """Initiates password reset process and sends a 6-digit OTP to the registered email."""
+    return AuthService.initiate_password_reset(db, req)
+
+
+@router.post("/reset-password", response_model=ResetPasswordResponse)
+def reset_password(
+    req: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    """Verifies OTP and resets account password."""
+    return AuthService.reset_password_with_otp(db, req)
+

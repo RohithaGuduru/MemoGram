@@ -16,6 +16,7 @@ import { useApp } from '../../context/AppContext';
 import { Header } from '../../components/common/Header';
 import { CaretakerNavbar } from '../../components/layout/CaretakerNavbar';
 import { Medication } from '../../types';
+import { MedicationForm } from '../../components/forms/MedicationForm';
 
 export const CaretakerMedicationsScreen: React.FC = () => {
   const { 
@@ -24,69 +25,33 @@ export const CaretakerMedicationsScreen: React.FC = () => {
     updateMedication, 
     deleteMedication, 
     patient, 
-    showToast 
+    showToast,
+    t 
   } = useApp();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingMed, setEditingMed] = useState<Medication | null>(null);
 
-  // Form State
-  const [formName, setFormName] = useState('');
-  const [formDosage, setFormDosage] = useState('');
-  const [formTime, setFormTime] = useState('9:00 AM');
-  const [formQty, setFormQty] = useState(30);
-  const [formInstructions, setFormInstructions] = useState('');
-
   const openAddModal = () => {
     setEditingMed(null);
-    setFormName('');
-    setFormDosage('');
-    setFormTime('9:00 AM');
-    setFormQty(30);
-    setFormInstructions('');
     setIsAddModalOpen(true);
   };
 
   const openEditModal = (med: Medication) => {
     setEditingMed(med);
-    setFormName(med.name);
-    setFormDosage(med.dosage);
-    setFormTime(med.scheduleTime);
-    setFormQty(med.remainingQuantity);
-    setFormInstructions(med.instructions);
     setIsAddModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formName || !formDosage) {
-      showToast('Please provide medicine name and dosage', 'warning');
-      return;
-    }
-
+  const handleSaveMedication = async (data: Omit<Medication, 'id'>) => {
     if (editingMed) {
-      updateMedication(editingMed.id, {
-        name: formName,
-        dosage: formDosage,
-        scheduleTime: formTime,
-        remainingQuantity: formQty,
-        instructions: formInstructions,
-      });
+      await updateMedication(editingMed.id, data);
+      showToast('Prescription updated successfully', 'success', 'Medications');
     } else {
-      addMedication({
-        name: formName,
-        dosage: formDosage,
-        scheduleTime: formTime,
-        timeCategory: formTime.includes('AM') ? 'morning' : 'evening',
-        remainingQuantity: formQty,
-        totalQuantity: formQty,
-        takenStatus: 'pending',
-        instructions: formInstructions || 'Take with water as directed.',
-        photoUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=200&auto=format&fit=crop&q=80'
-      });
+      await addMedication(data);
+      showToast('Prescription added successfully', 'success', 'Medications');
     }
-
     setIsAddModalOpen(false);
+    setEditingMed(null);
   };
 
   const handleRefill = (id: string, current: number) => {
@@ -96,7 +61,7 @@ export const CaretakerMedicationsScreen: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col justify-between bg-warm-50 dark:bg-stone-900 text-stone-800 dark:text-stone-100">
-      <Header title="Medication Management" showBack />
+      <Header title={t('nav_meds')} showBack />
 
       <div className="flex-1 p-4 sm:p-5 space-y-4 overflow-y-auto custom-scrollbar">
         
@@ -107,7 +72,7 @@ export const CaretakerMedicationsScreen: React.FC = () => {
               {patient.name}'s Schedule
             </h2>
             <p className="text-xs text-stone-500">
-              {medications.length} active prescriptions monitored
+              {t('active_prescriptions', { count: medications.length })}
             </p>
           </div>
 
@@ -117,7 +82,7 @@ export const CaretakerMedicationsScreen: React.FC = () => {
             className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-sm transition-all"
           >
             <Plus size={16} />
-            <span>Add Medicine</span>
+            <span>{t('btn_add_prescription')}</span>
           </button>
         </div>
 
@@ -133,17 +98,28 @@ export const CaretakerMedicationsScreen: React.FC = () => {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
-                    <img
-                      src={med.photoUrl || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=200&auto=format&fit=crop&q=80'}
-                      alt={med.name}
-                      className="w-14 h-14 rounded-2xl object-cover ring-2 ring-stone-100 dark:ring-stone-700"
-                    />
+                    {med.photoUrl ? (
+                      <img
+                        src={med.photoUrl}
+                        alt={med.name}
+                        className="w-14 h-14 rounded-2xl object-cover ring-2 ring-stone-100 dark:ring-stone-700 flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-2xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300 flex items-center justify-center flex-shrink-0">
+                        <Pill size={26} />
+                      </div>
+                    )}
 
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-extrabold text-base text-stone-900 dark:text-stone-100">
                           {med.name}
                         </h3>
+                        {med.medicineType && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 border border-teal-200/60 dark:border-teal-800/60">
+                            {med.medicineType}
+                          </span>
+                        )}
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
                           {med.dosage}
                         </span>
@@ -159,7 +135,7 @@ export const CaretakerMedicationsScreen: React.FC = () => {
                           <Package size={13} />
                           <strong className={isLow ? 'text-amber-600 font-bold' : 'text-stone-800 dark:text-stone-200'}>
                             {med.remainingQuantity}
-                          </strong> pills left
+                          </strong> {t('in_stock', { count: med.remainingQuantity })}
                         </span>
                       </div>
 
@@ -207,7 +183,7 @@ export const CaretakerMedicationsScreen: React.FC = () => {
                       onClick={() => handleRefill(med.id, med.remainingQuantity)}
                       className="text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-1"
                     >
-                      <span>Low stock — Refill +30</span>
+                      <span>{t('btn_refill_stock')}</span>
                     </button>
                   )}
                 </div>
@@ -220,102 +196,16 @@ export const CaretakerMedicationsScreen: React.FC = () => {
 
       {/* Add / Edit Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white dark:bg-stone-900 rounded-3xl p-6 max-w-md w-full shadow-2xl border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100">
-            <div className="flex items-center justify-between pb-3 border-b border-stone-200 dark:border-stone-800 mb-4">
-              <h3 className="text-lg font-bold">
-                {editingMed ? 'Edit Medication' : 'Add New Prescription'}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-1.5 text-stone-400 hover:text-stone-600 rounded-lg"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSave} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-bold uppercase mb-1">Medication Name</label>
-                <input
-                  type="text"
-                  required
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  placeholder="e.g. Donepezil"
-                  className="w-full px-3 py-2.5 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 text-sm font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold uppercase mb-1">Dosage</label>
-                  <input
-                    type="text"
-                    required
-                    value={formDosage}
-                    onChange={(e) => setFormDosage(e.target.value)}
-                    placeholder="e.g. 1 tablet (5mg)"
-                    className="w-full px-3 py-2.5 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 text-sm font-medium focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase mb-1">Stock Quantity</label>
-                  <input
-                    type="number"
-                    value={formQty}
-                    onChange={(e) => setFormQty(Number(e.target.value))}
-                    className="w-full px-3 py-2.5 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 text-sm font-medium focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase mb-1">Schedule Time</label>
-                <select
-                  value={formTime}
-                  onChange={(e) => setFormTime(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 text-sm font-medium focus:outline-none"
-                >
-                  <option value="8:00 AM">8:00 AM (Morning)</option>
-                  <option value="9:00 AM">9:00 AM (Morning)</option>
-                  <option value="1:00 PM">1:00 PM (Afternoon)</option>
-                  <option value="8:00 PM">8:00 PM (Evening)</option>
-                  <option value="9:00 PM">9:00 PM (Night)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase mb-1">Special Instructions</label>
-                <input
-                  type="text"
-                  value={formInstructions}
-                  onChange={(e) => setFormInstructions(e.target.value)}
-                  placeholder="e.g. Take right after breakfast with water"
-                  className="w-full px-3 py-2.5 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 text-sm font-medium focus:outline-none"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="flex-1 py-3 rounded-xl bg-stone-100 dark:bg-stone-800 font-semibold text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm shadow-sm"
-                >
-                  {editingMed ? 'Update Medication' : 'Save Prescription'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <MedicationForm
+          isModal={true}
+          initialData={editingMed}
+          onSave={handleSaveMedication}
+          onCancel={() => {
+            setIsAddModalOpen(false);
+            setEditingMed(null);
+          }}
+          submitButtonText={editingMed ? 'Update Medication' : 'Save Prescription'}
+        />
       )}
 
       <CaretakerNavbar />

@@ -7,6 +7,8 @@ export interface CaregiverBackendResponse {
   agency?: string;
   notes?: string;
   relationship_with_patient?: string;
+  preferred_language?: string;
+  font_size?: string;
   created_at: string;
   user?: {
     id: string;
@@ -22,6 +24,18 @@ export const caretakersApi = {
   async getProfile(): Promise<CaregiverBackendResponse> {
     return apiClient<CaregiverBackendResponse>('/caretakers/me', {
       method: 'GET',
+    });
+  },
+
+  async updateProfile(payload: {
+    preferred_language?: string;
+    font_size?: string;
+    agency?: string;
+    notes?: string;
+  }): Promise<CaregiverBackendResponse> {
+    return apiClient<CaregiverBackendResponse>('/caretakers/me', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
     });
   },
 

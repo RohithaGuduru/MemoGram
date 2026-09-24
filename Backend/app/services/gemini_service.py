@@ -60,6 +60,7 @@ class GeminiService:
     def check_availability(cls) -> Dict[str, Any]:
         """Returns the operational status and capability matrix of Gemini AI."""
         has_key = bool(settings.GEMINI_API_KEY and settings.GEMINI_API_KEY.strip() != "")
+        supported_langs = ["as", "brx", "mni", "kokborok", "mizo", "kha", "hi", "en"]
         
         if not has_key:
             return {
@@ -68,7 +69,7 @@ class GeminiService:
                 "model": settings.GEMINI_MODEL,
                 "voice_model": settings.GEMINI_VOICE_MODEL,
                 "voice_enabled": False,
-                "supported_languages": ["en", "hi", "as", "bn", "mni"],
+                "supported_languages": supported_langs,
                 "message": "Gemini API key is not configured. Running in offline / deterministic mode.",
             }
 
@@ -79,7 +80,7 @@ class GeminiService:
                 "model": settings.GEMINI_MODEL,
                 "voice_model": settings.GEMINI_VOICE_MODEL,
                 "voice_enabled": False,
-                "supported_languages": ["en", "hi", "as", "bn", "mni"],
+                "supported_languages": supported_langs,
                 "message": "google-genai SDK package is not installed. Running in deterministic fallback mode.",
             }
 
@@ -89,7 +90,7 @@ class GeminiService:
             "model": settings.GEMINI_MODEL,
             "voice_model": settings.GEMINI_VOICE_MODEL,
             "voice_enabled": True,
-            "supported_languages": ["en", "hi", "as", "bn", "mni"],
+            "supported_languages": supported_langs,
             "message": "Gemini AI services and Live Voice assistant are operational.",
         }
 
@@ -300,6 +301,43 @@ class GeminiService:
             return None
 
     # -------------------------------------------------------------------------
+    # Voice Instructions Builder
+    # -------------------------------------------------------------------------
+    @classmethod
+    def build_voice_system_instruction(cls, language: str = "en") -> str:
+        """
+        Builds elderly-friendly voice assistant system instructions enforcing
+        strict language adherence, conversational warmth, and medical safety.
+        """
+        norm_lang = language.lower().split("-")[0]
+        language_names = {
+            "as": "Assamese",
+            "brx": "Bodo",
+            "mni": "Manipuri / Meitei",
+            "kokborok": "Kokborok",
+            "trp": "Kokborok",
+            "mizo": "Mizo",
+            "lus": "Mizo",
+            "kha": "Khasi",
+            "khasi": "Khasi",
+            "hi": "Hindi",
+            "en": "English (India)",
+        }
+        lang_name = language_names.get(norm_lang, "English (India)")
+
+        return f"""You are Memogram, a caring, gentle, and respectful AI cognitive wellness and medication companion for senior citizens.
+
+CRITICAL VOICE & LANGUAGE INSTRUCTIONS:
+1. The patient's selected language is: {lang_name} (language code: {language}).
+2. ALWAYS understand the patient's selected language, whether spoken in native script, transliteration, or colloquial phrasing.
+3. ALWAYS generate your response entirely in {lang_name} ({language}).
+4. NEVER translate or switch the response into English or Hindi unless {lang_name} is explicitly English or Hindi.
+5. Keep your spoken responses short (1-2 sentences), comforting, and simple for an elderly listener to follow.
+6. Speak with warmth, dignity, and patience. Avoid technical, clinical, or formal medical jargon.
+7. Medical safety: You are a wellness companion, NOT a diagnostic clinician. Never provide diagnoses, never alter medication dosages. Always recommend consulting a doctor or family caregiver for medical concerns.
+8. If the senior asks about medications, reminders, games, progress, or needs emergency help, use the appropriate tool function."""
+
+    # -------------------------------------------------------------------------
     # Fallback Deterministic Assistant
     # -------------------------------------------------------------------------
     @classmethod
@@ -313,42 +351,77 @@ class GeminiService:
     ) -> str:
         """
         Reliable offline / fallback response generator when Gemini is not connected.
-        Executes tools deterministically based on keyword intent.
+        Executes tools deterministically based on keyword intent across all 8 supported languages.
         """
         msg_lower = message.lower()
+        norm_lang = language.lower().split("-")[0]
 
         # 1. Medicine / Reminder query
-        if any(w in msg_lower for w in ["medicine", "pill", "medication", "dose", "tablet", "dawaii", "dawa"]):
+        if any(w in msg_lower for w in ["medicine", "pill", "medication", "dose", "tablet", "dawaii", "dawa", "দৰব", "ঔষধ", "दवाई", "औषध", "মুলি", "হিদাক", "damdawi"]):
             if db:
                 executed_tools.append("get_medication_schedule")
                 meds = AIToolsService.get_medication_schedule(db, patient_id)
                 active_meds = meds.get("medications", [])
                 if active_meds:
                     med_names = ", ".join(m["name"] + f" ({m['time_of_day']})" for m in active_meds[:3])
-                    if language == "hi":
-                        return f"आपकी आज की दवाइयों में {med_names} शामिल हैं।"
-                    elif language == "as":
+                    if norm_lang == "hi":
+                        return f"आपकी आज की दवाई (दवाइयों) में {med_names} शामिल हैं।"
+                    elif norm_lang == "as":
                         return f"আপোনাৰ আজিৰ ঔষধসমূহৰ ভিতৰত {med_names} আছে।"
+                    elif norm_lang == "brx":
+                        return f"नोंथांनि दिनैनि मुलिफोरनि मादाव {med_names} दं।"
+                    elif norm_lang == "mni":
+                        return f"নহাক্কী ঙসিগী হিদাকশিংগী মনুংদা {med_names} য়াওরি।"
+                    elif norm_lang in ["kokborok", "trp"]:
+                        return f"नोंनि दिनैनि औसधफोरनि मादाव {med_names} दं।"
+                    elif norm_lang in ["mizo", "lus"]:
+                        return f"Vawiina i damdawi ei turah {med_names} an tel e."
+                    elif norm_lang in ["kha", "khasi"]:
+                        return f"Ki dawai ba dei ban dih ki kynthup ia: {med_names}."
                     return f"Your scheduled medications include: {med_names}. Please take them with water as advised."
+            if norm_lang == "hi":
+                return "कृपया अपनी दैनिक दवाइयों के समय की जांच करें।"
+            elif norm_lang == "as":
+                return "অনুগ্ৰহ কৰি আপোনাৰ দৈনিক ঔষধৰ সময়সূচী পৰীক্ষা কৰক।"
+            elif norm_lang == "brx":
+                return "अननानै नोंथांनि मुलि समखौ नायबिजির।"
+            elif norm_lang == "mni":
+                return "চানবীদুনা নহাক্কী নোংমগী হিদাক মতম য়েংশিনবীয়ু।"
+            elif norm_lang in ["kokborok", "trp"]:
+                return "अननानै नोंनि औसध सम नायबिजির।"
+            elif norm_lang in ["mizo", "lus"]:
+                return "Khawngaihin i damdawi ei hun tur enfiah rawh."
+            elif norm_lang in ["kha", "khasi"]:
+                return "Sngewbha peit ia ka por dih dawai jong phi."
             return "Please check your daily schedule for your medication times."
 
         # 2. Activity / Next Game query
-        if any(w in msg_lower for w in ["game", "activity", "play", "start", "exercise", "khel"]):
+        if any(w in msg_lower for w in ["game", "activity", "play", "start", "exercise", "khel", "খেল", "খেলা", "खेल", "गेलेनाय"]):
             if db:
                 executed_tools.append("get_next_recommended_game")
                 rec = AIToolsService.get_next_recommended_game(db, patient_id)
                 if "game_name" in rec:
                     name = rec["game_name"]
                     diff = rec["target_difficulty"]
-                    if language == "hi":
+                    if norm_lang == "hi":
                         return f"आपके लिए अगला गतिविधि खेल '{name}' (स्तर {diff}) है। क्या आप इसे शुरू करना चाहेंगे?"
-                    elif language == "as":
+                    elif norm_lang == "as":
                         return f"আপোনাৰ বাবে পৰৱৰ্তী কাৰ্যকলাপ হৈছে '{name}' (স্তৰ {diff})। আপুনি আৰম্ভ কৰিব নেকি?"
+                    elif norm_lang == "brx":
+                        return f"नोंथांनि थाखाय उननि गेलेनाया जाबाय '{name}' (थाखो {diff})।"
+                    elif norm_lang == "mni":
+                        return f"নহাক্কীদমক মথংগী শানবা য়াবা খেলা অদুদি '{name}' (থাক {diff}) নি।"
+                    elif norm_lang in ["kokborok", "trp"]:
+                        return f"नोंनि थाखाय उननि गेलेनाय जाबाय '{name}' (थाखो {diff})।"
+                    elif norm_lang in ["mizo", "lus"]:
+                        return f"I khelh leh tur chu '{name}' (level {diff}) a ni e."
+                    elif norm_lang in ["kha", "khasi"]:
+                        return f"Ka jingialehkai ba la ai jingmut ka long '{name}' (kyrdan {diff})."
                     return f"You have a recommended activity: '{name}' at level {diff}. Would you like to start?"
             return "You have pleasant cognitive activities prepared for you. Tap the play button whenever you are ready."
 
         # 3. Schedule / Reminders query
-        if any(w in msg_lower for w in ["reminder", "schedule", "routine", "next", "now", "kya karu"]):
+        if any(w in msg_lower for w in ["reminder", "schedule", "routine", "next", "now", "kya karu", "সময়", "সোঁৱৰণী", "याद"]):
             if db:
                 executed_tools.append("get_upcoming_reminders")
                 rem = AIToolsService.get_upcoming_reminders(db, patient_id)
@@ -356,15 +429,35 @@ class GeminiService:
                 if next_rem:
                     title = next_rem["title"]
                     t = next_rem["scheduled_time"]
-                    if language == "hi":
+                    if norm_lang == "hi":
                         return f"आपका अगला रिमाइंडर '{title}' {t} बजे निर्धारित है।"
-                    elif language == "as":
+                    elif norm_lang == "as":
                         return f"আপোনাৰ পৰৱৰ্তী সোঁৱৰণি '{title}' {t} বজাত আছে।"
+                    elif norm_lang == "brx":
+                        return f"नोंथांनि उननि गोसोखांहोग्राया '{title}' {t} रिंगायाव दं।"
+                    elif norm_lang == "mni":
+                        return f"নহাক্কী মথংগী নীংশিংবা '{title}' {t} মতমদা লৈরি।"
+                    elif norm_lang in ["kokborok", "trp"]:
+                        return f"नोंनि उननि रिमाइंडर '{title}' {t} समाव दं।"
+                    elif norm_lang in ["mizo", "lus"]:
+                        return f"I hriattirna leh tur '{title}' hi dar {t}-ah a ni e."
+                    elif norm_lang in ["kha", "khasi"]:
+                        return f"Ka jingpyrkhat kynmaw ban bud pat '{title}' ha ka por {t}."
                     return f"Your next reminder is '{title}' scheduled for {t}."
 
         # Generic friendly fallback
-        if language == "hi":
-            return "नमस्ते! मैं माइंडीज सहायक हूँ। आप अपनी गतिविधियों, दवाइयों या दिनचर्या के बारे में मुझसे पूछ सकते हैं।"
-        elif language == "as":
-            return "নমস্কাৰ! মই মাইণ্ডইজ সহায়ক। আপোনাৰ কাৰ্যকলাপ বা ঔষধৰ বিষয়ে মোক সুধিব পাৰে।"
-        return "Hello! I am MindEase. You can ask me about your daily activities, upcoming reminders, or medicine schedule."
+        if norm_lang == "hi":
+            return "नमस्ते! मैं मेमोग्राम सहायक हूँ। आप अपनी गतिविधियों, दवाइयों या दिनचर्या के बारे में मुझसे पूछ सकते हैं।"
+        elif norm_lang == "as":
+            return "নমস্কাৰ! মই মেম'গ্ৰাম সহায়ক। আপোনাৰ কাৰ্যকলাপ বা ঔষধৰ বিষয়ে মোক সুধিব পাৰে।"
+        elif norm_lang == "brx":
+            return "खुलुमबाय! आं मेमोग्राम हेफाजाबगिरि। नोंथाङा हाबाफारि एबा मुलिनि बागै सोंनो हागौ।"
+        elif norm_lang == "mni":
+            return "খুরুমজরি! ঐহাক মেমোগ্রাম মতেং পাংবা মরুপনি। নহাক্না থবক অমসুং হিদাক্কী মরমদা হংবা য়াগনি।"
+        elif norm_lang in ["kokborok", "trp"]:
+            return "खुलुमबाय! आं मेमोग्राम मददगिरि। नोंनि हाबा एবা औसधनि बागै सोंनो हागौ।"
+        elif norm_lang in ["mizo", "lus"]:
+            return "Chibai! Memogram puihtu ka ni e. I hunbi leh damdawi chungchang min zawt thei e."
+        elif norm_lang in ["kha", "khasi"]:
+            return "Khublei! Nga dei u Memogram iarap. Phi lah ban kylli ia ki kam, jingkynmaw ne dawai jong phi."
+        return "Hello! I am Memogram. You can ask me about your daily activities, upcoming reminders, or medicine schedule."

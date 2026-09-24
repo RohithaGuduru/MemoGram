@@ -5,17 +5,17 @@ import { ScreenId } from '../../types';
 import { t } from '../../services/languageCapabilities';
 
 export const PatientBottomNav: React.FC = () => {
-  const { currentScreen, navigateTo, alerts, primaryLanguage, fallbackLanguage } = useApp();
+  const { currentScreen, navigateTo, alerts, t } = useApp();
 
   const unreadAlertsCount = alerts.filter((a) => a.unread).length;
 
   const navItems: { screen: ScreenId; label: string; icon: React.ComponentType<any> }[] = [
-    { screen: 'patient_home', label: t('nav_home', primaryLanguage, fallbackLanguage), icon: Home },
-    { screen: 'patient_meds', label: t('nav_medicines', primaryLanguage, fallbackLanguage), icon: Pill },
-    { screen: 'patient_games', label: t('nav_games', primaryLanguage, fallbackLanguage), icon: Gamepad2 },
-    { screen: 'patient_alerts', label: t('nav_alerts', primaryLanguage, fallbackLanguage), icon: Bell },
-    { screen: 'patient_profile', label: t('nav_profile', primaryLanguage, fallbackLanguage), icon: User },
-    { screen: 'patient_settings', label: t('nav_settings', primaryLanguage, fallbackLanguage), icon: Settings },
+    { screen: 'patient_home', label: t('nav_home'), icon: Home },
+    { screen: 'patient_meds', label: t('nav_medicines'), icon: Pill },
+    { screen: 'patient_games', label: t('nav_games'), icon: Gamepad2 },
+    { screen: 'patient_alerts', label: t('nav_alerts'), icon: Bell },
+    { screen: 'patient_profile', label: t('nav_profile'), icon: User },
+    { screen: 'patient_settings', label: t('nav_settings'), icon: Settings },
   ];
 
   return (

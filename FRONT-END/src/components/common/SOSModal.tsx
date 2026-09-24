@@ -10,12 +10,15 @@ export const SOSModal: React.FC = () => {
     triggerSosAlert, 
     sosAlertSent, 
     patient, 
-    caretaker 
+    caretaker,
+    t 
   } = useApp();
 
   const [simulatedCountdown, setSimulatedCountdown] = useState<number | null>(null);
 
   if (!isSosModalOpen) return null;
+
+  const caregiverName = patient.emergencyContact.name || caretaker.name || 'Priya';
 
   const handleSendAlert = () => {
     setSimulatedCountdown(3);
@@ -31,7 +34,7 @@ export const SOSModal: React.FC = () => {
     }, 800);
   };
 
-  const questionPrompt = "Do you need help? We can send an immediate notification to your caregiver Priya Sharma.";
+  const questionPrompt = `${t('sos_modal_title')} ${t('sos_modal_desc', { name: caregiverName })}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/70 backdrop-blur-sm animate-fade-in">
@@ -55,7 +58,7 @@ export const SOSModal: React.FC = () => {
 
             <div className="flex items-center justify-center gap-2 mb-2">
               <h2 className="text-2xl sm:text-3xl font-extrabold text-rose-700 dark:text-rose-400">
-                Do you need help?
+                {t('sos_modal_title')}
               </h2>
               <SpeakTextButton 
                 textToSpeak={questionPrompt} 
@@ -65,16 +68,16 @@ export const SOSModal: React.FC = () => {
             </div>
 
             <p className="text-base sm:text-lg text-stone-600 dark:text-stone-300 font-medium mb-6">
-              We can alert your daughter <strong className="text-stone-900 dark:text-stone-100">{patient.emergencyContact.name || caretaker.name}</strong> right away.
+              {t('sos_modal_desc', { name: caregiverName })}
             </p>
 
             {simulatedCountdown !== null ? (
               <div className="py-4 my-2 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 text-rose-800 dark:text-rose-200">
                 <p className="font-semibold text-lg animate-pulse">
-                  Sending alert in {simulatedCountdown}...
+                  {t('sos_sending_in', { count: simulatedCountdown })}
                 </p>
                 <p className="text-xs text-rose-600 dark:text-rose-400 mt-1">
-                  (Simulated emergency dispatch)
+                  ({t('sos_demo_note')})
                 </p>
               </div>
             ) : (
@@ -85,7 +88,7 @@ export const SOSModal: React.FC = () => {
                   className="w-full py-4 px-6 rounded-2xl bg-rose-600 hover:bg-rose-700 active:scale-98 text-white font-bold text-lg sm:text-xl shadow-lg shadow-rose-600/30 flex items-center justify-center gap-3 transition-all"
                 >
                   <PhoneCall size={24} />
-                  <span>Contact Caregiver / Send Alert</span>
+                  <span>{t('sos_btn_contact')}</span>
                 </button>
 
                 <button
@@ -93,14 +96,14 @@ export const SOSModal: React.FC = () => {
                   onClick={closeSosModal}
                   className="w-full py-3.5 px-6 rounded-2xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 font-semibold text-base transition-colors"
                 >
-                  Cancel — I am okay
+                  {t('sos_btn_cancel')}
                 </button>
               </div>
             )}
 
             <div className="mt-5 pt-3 border-t border-stone-200 dark:border-stone-800 text-xs text-stone-400 flex items-center justify-center gap-1.5">
               <AlertTriangle size={14} className="text-amber-500" />
-              <span>Prototype demo mode: Does not call emergency services.</span>
+              <span>{t('sos_demo_note')}</span>
             </div>
           </div>
         ) : (
@@ -110,20 +113,20 @@ export const SOSModal: React.FC = () => {
             </div>
 
             <h2 className="text-2xl font-bold text-emerald-800 dark:text-emerald-300 mb-2">
-              Caregiver Alerted
+              {t('sos_alerted_title')}
             </h2>
 
             <p className="text-base text-stone-600 dark:text-stone-300 mb-4">
-              A high-priority notification was dispatched to <strong>{patient.emergencyContact.name || 'Priya Sharma'}</strong> ({patient.emergencyContact.phone}).
+              {t('sos_alerted_desc', { name: caregiverName })}
             </p>
 
             <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 mb-6 text-left text-sm text-emerald-900 dark:text-emerald-200">
               <div className="flex items-center gap-2 font-semibold mb-1">
                 <HeartHandshake size={18} className="text-emerald-600" />
-                <span>What happens next?</span>
+                <span>{t('sos_next_steps')}</span>
               </div>
               <p className="text-xs leading-relaxed text-stone-600 dark:text-stone-300">
-                Priya will receive an immediate push alert and SMS. Stay seated comfortably, breathe gently, and wait for her response.
+                {t('sos_next_steps_desc')}
               </p>
             </div>
 
@@ -132,7 +135,7 @@ export const SOSModal: React.FC = () => {
               onClick={closeSosModal}
               className="w-full py-3.5 px-6 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-base transition-colors shadow-md"
             >
-              Return to Home
+              {t('sos_return_home')}
             </button>
           </div>
         )}
@@ -140,3 +143,4 @@ export const SOSModal: React.FC = () => {
     </div>
   );
 };
+

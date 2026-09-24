@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { isRealPatientId, DemoModeApiError } from '../services/demoFallback';
 
 export interface CategoryMetricSummary {
   category: string;
@@ -53,12 +54,18 @@ export interface PerformanceHistoryBackendResponse {
 
 export const metricsApi = {
   async getPerformanceOverview(patientId: string): Promise<PerformanceOverviewBackendResponse> {
+    if (!isRealPatientId(patientId)) {
+      throw new DemoModeApiError(`Cannot get performance overview for demo patient ID: ${patientId}`);
+    }
     return apiClient<PerformanceOverviewBackendResponse>(`/patients/${patientId}/performance/overview`, {
       method: 'GET',
     });
   },
 
   async getPerformanceHistory(patientId: string, timeframe: 'day' | 'week' | 'month' = 'week'): Promise<PerformanceHistoryBackendResponse> {
+    if (!isRealPatientId(patientId)) {
+      throw new DemoModeApiError(`Cannot get performance history for demo patient ID: ${patientId}`);
+    }
     return apiClient<PerformanceHistoryBackendResponse>(`/patients/${patientId}/performance/history`, {
       method: 'GET',
       params: { timeframe },

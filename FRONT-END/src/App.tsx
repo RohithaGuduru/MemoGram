@@ -11,6 +11,8 @@ import { CaretakerAuthScreen } from './screens/onboarding/CaretakerAuthScreen';
 import { CaretakerSetupScreen } from './screens/onboarding/CaretakerSetupScreen';
 import { PatientAuthScreen } from './screens/onboarding/PatientAuthScreen';
 import { PatientSetupScreen } from './screens/onboarding/PatientSetupScreen';
+import { ForgotPasswordScreen } from './screens/onboarding/ForgotPasswordScreen';
+import { ResetPasswordScreen } from './screens/onboarding/ResetPasswordScreen';
 
 // Caretaker Portal Screens
 import { CaretakerDashboardScreen } from './screens/caretaker/CaretakerDashboardScreen';
@@ -36,6 +38,8 @@ import { RoutineSequenceGame } from './screens/games/RoutineSequenceGame';
 import { CupShuffleGame } from './screens/games/CupShuffleGame';
 import { CulturalMatchGame } from './screens/games/CulturalMatchGame';
 import { FamilyStoriesGame } from './screens/games/FamilyStoriesGame';
+import { MemoryMosaicGame } from './screens/games/MemoryMosaicGame';
+import { BlockMindGame } from './screens/games/BlockMindGame';
 
 const ScreenRouter: React.FC = () => {
   const { currentScreen } = useApp();
@@ -87,6 +91,12 @@ const ScreenRouter: React.FC = () => {
       case 'patient_setup':
         return <PatientSetupScreen />;
 
+      case 'forgot_password':
+        return <ForgotPasswordScreen />;
+
+      case 'reset_password':
+        return <ResetPasswordScreen />;
+
       // Flow 7: Patient Home
       case 'patient_home':
         return <PatientHomeScreen />;
@@ -124,6 +134,12 @@ const ScreenRouter: React.FC = () => {
 
       case 'game_family_stories':
         return <FamilyStoriesGame />;
+
+      case 'game_memory_mosaic':
+        return <MemoryMosaicGame />;
+
+      case 'game_block_mind':
+        return <BlockMindGame />;
 
       default:
         return <WelcomeScreen />;

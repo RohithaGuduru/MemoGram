@@ -8,7 +8,9 @@ import {
   Mic, 
   Play, 
   ArrowRight,
-  Clock
+  Clock,
+  Puzzle,
+  Boxes
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Header } from '../../components/common/Header';
@@ -16,15 +18,16 @@ import { PatientBottomNav } from '../../components/layout/PatientBottomNav';
 import { SpeakTextButton } from '../../components/common/SpeakTextButton';
 import { CORE_GAMES } from '../../services/mockData';
 import { t } from '../../services/languageCapabilities';
+import { isRealPatientId } from '../../services/demoFallback';
 import { GameId } from '../../types';
 import { recommendationsApi } from '../../api';
 
 export const PatientGamesScreen: React.FC = () => {
-  const { navigateTo, adaptiveDifficulties, primaryLanguage, fallbackLanguage, patient } = useApp();
+  const { navigateTo, adaptiveDifficulties, patient, t } = useApp();
   const [recommendedGame, setRecommendedGame] = useState<any>(null);
 
   React.useEffect(() => {
-    if (patient.id) {
+    if (patient.id && isRealPatientId(patient.id)) {
       (async () => {
         try {
           const res = await recommendationsApi.getNextRecommendation(patient.id);
@@ -36,8 +39,8 @@ export const PatientGamesScreen: React.FC = () => {
     }
   }, [patient.id]);
 
-  const gamesTitle = t('games_title', primaryLanguage, fallbackLanguage);
-  const chooseGameSubtitle = t('choose_game', primaryLanguage, fallbackLanguage);
+  const gamesTitle = t('games_title');
+  const chooseGameSubtitle = t('choose_game');
 
   const getGameIcon = (iconName: string) => {
     switch (iconName) {
@@ -46,31 +49,50 @@ export const PatientGamesScreen: React.FC = () => {
       case 'Eye': return <Eye size={28} />;
       case 'Sparkles': return <Sparkles size={28} />;
       case 'Mic': return <Mic size={28} />;
+      case 'Puzzle': return <Puzzle size={28} />;
+      case 'Boxes': return <Boxes size={28} />;
       default: return <Gamepad2 size={28} />;
     }
   };
 
   const getLocalizedGameName = (id: GameId) => {
     switch (id) {
-      case 'groceries': return t('game_groceries_title', primaryLanguage, fallbackLanguage);
-      case 'routine': return t('game_routine_title', primaryLanguage, fallbackLanguage);
-      case 'cup_shuffle': return t('game_cup_shuffle_title', primaryLanguage, fallbackLanguage);
-      case 'cultural_match': return t('game_cultural_match_title', primaryLanguage, fallbackLanguage);
-      case 'family_stories': return t('game_family_stories_title', primaryLanguage, fallbackLanguage);
+      case 'groceries': return t('game_groceries_title');
+      case 'routine': return t('game_routine_title');
+      case 'cup_shuffle': return t('game_cup_shuffle_title');
+      case 'cultural_match': return t('game_cultural_match_title');
+      case 'family_stories': return t('game_family_stories_title');
+      case 'memory_mosaic': return t('game_memory_mosaic_title');
+      case 'block_mind': return t('game_block_mind_title');
     }
   };
 
   const getLocalizedGameDesc = (id: GameId) => {
     switch (id) {
-      case 'groceries': return t('game_groceries_desc', primaryLanguage, fallbackLanguage);
-      case 'routine': return t('game_routine_desc', primaryLanguage, fallbackLanguage);
-      case 'cup_shuffle': return t('game_cup_shuffle_desc', primaryLanguage, fallbackLanguage);
-      case 'cultural_match': return t('game_cultural_match_desc', primaryLanguage, fallbackLanguage);
-      case 'family_stories': return t('game_family_stories_desc', primaryLanguage, fallbackLanguage);
+      case 'groceries': return t('game_groceries_desc');
+      case 'routine': return t('game_routine_desc');
+      case 'cup_shuffle': return t('game_cup_shuffle_desc');
+      case 'cultural_match': return t('game_cultural_match_desc');
+      case 'family_stories': return t('game_family_stories_desc');
+      case 'memory_mosaic': return t('game_memory_mosaic_desc');
+      case 'block_mind': return t('game_block_mind_desc');
     }
   };
 
-  const pageIntroAudio = `${gamesTitle}. ${chooseGameSubtitle}. There are 5 games to keep your memory sharp and enjoy warm stories.`;
+  const getLocalizedCategory = (cat: string) => {
+    switch (cat.toLowerCase()) {
+      case 'memory': return t('cog_cat_memory');
+      case 'executive function': return t('cog_cat_executive');
+      case 'attention & focus': return t('cog_cat_attention');
+      case 'cultural memory': return t('cog_cat_cultural');
+      case 'storytelling & speech': return t('cog_cat_storytelling');
+      case 'pattern recognition': return t('cog_cat_pattern');
+      case 'spatial planning': return t('cog_cat_spatial');
+      default: return cat;
+    }
+  };
+
+  const pageIntroAudio = `${gamesTitle}. ${chooseGameSubtitle}.`;
 
   return (
     <div className="flex-1 flex flex-col justify-between bg-warm-50 dark:bg-stone-900 text-stone-800 dark:text-stone-100">
@@ -104,7 +126,12 @@ export const PatientGamesScreen: React.FC = () => {
             const locName = getLocalizedGameName(game.id);
             const locDesc = getLocalizedGameDesc(game.id);
             const currentDiff = adaptiveDifficulties[game.id] || 'standard';
-            const gameAudio = `${game.name}. ${locDesc} Tap play to start.`;
+            const localizedDiff = currentDiff === 'easier' 
+              ? t('difficulty_easier') 
+              : currentDiff === 'challenging' 
+                ? t('difficulty_challenging') 
+                : t('difficulty_standard');
+            const gameAudio = `${locName}. ${locDesc}`;
 
             return (
               <div
@@ -122,7 +149,7 @@ export const PatientGamesScreen: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${game.colorScheme.badge} uppercase tracking-wider`}>
-                          Game {index + 1} • {game.category}
+                          {t('game_badge_label', { num: index + 1, category: getLocalizedCategory(game.category) })}
                         </span>
 
                         <span className="text-[10px] font-semibold text-stone-500 dark:text-stone-400 bg-white/70 dark:bg-stone-800 px-2 py-0.5 rounded-md flex items-center gap-1">
@@ -152,7 +179,7 @@ export const PatientGamesScreen: React.FC = () => {
                 {/* Bottom Bar with Play Button */}
                 <div className="mt-4 pt-3 border-t border-black/5 dark:border-white/10 flex items-center justify-between">
                   <span className="text-xs font-semibold text-stone-500">
-                    Difficulty: <strong className="capitalize text-stone-800 dark:text-stone-200">{currentDiff}</strong>
+                    {t('difficulty_label')} <strong className="capitalize text-stone-800 dark:text-stone-200">{localizedDiff}</strong>
                   </span>
 
                   <button
@@ -164,7 +191,7 @@ export const PatientGamesScreen: React.FC = () => {
                     className="px-5 py-2.5 rounded-2xl bg-teal-600 group-hover:bg-teal-700 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-teal-600/20 flex items-center gap-2 transition-all cursor-pointer"
                   >
                     <Play size={15} fill="currentColor" />
-                    <span>Play Now</span>
+                    <span>{t('btn_play_now')}</span>
                   </button>
                 </div>
               </div>

@@ -16,16 +16,37 @@ import { useApp } from '../../context/AppContext';
 import { Header } from '../../components/common/Header';
 import { CaretakerNavbar } from '../../components/layout/CaretakerNavbar';
 import { DemoBanner } from '../../components/common/DemoBanner';
-import { WEEKLY_ANALYTICS_DATA, INITIAL_AI_INSIGHTS, DEMO_DATA_DISCLAIMER } from '../../services/mockData';
+import { DEMO_DATA_DISCLAIMER, WEEKLY_ANALYTICS_DATA } from '../../services/mockData';
+import { isRealPatientId } from '../../services/demoFallback';
 import { reportsApi } from '../../api';
 
+const getDemoWeeklyReport = () => ({
+  period_start: 'Mon',
+  period_end: 'Sun (Demo Week)',
+  medication_adherence_rate: 93,
+  total_sessions_completed: WEEKLY_ANALYTICS_DATA.summaryReport.totalSessions,
+  average_accuracy: 77,
+  positive_highlights: WEEKLY_ANALYTICS_DATA.summaryReport.highlightStrengths,
+  gentle_encouragements: WEEKLY_ANALYTICS_DATA.summaryReport.gentleEncouragements,
+  observations: [
+    'Cognitive engagement is stable across daily routine tasks.',
+    'Reaction times in Pattern Match have improved over the past 7 days.'
+  ]
+});
+
 export const CaretakerReportsScreen: React.FC = () => {
-  const { patient, caretaker, showToast } = useApp();
-  const [weeklyReport, setWeeklyReport] = useState<any>(null);
+  const { patient, caretaker, showToast, t } = useApp();
+  const [weeklyReport, setWeeklyReport] = useState<any>(() => 
+    isRealPatientId(patient.id) ? null : getDemoWeeklyReport()
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   React.useEffect(() => {
     if (patient.id) {
+      if (!isRealPatientId(patient.id)) {
+        setWeeklyReport(getDemoWeeklyReport());
+        return;
+      }
       (async () => {
         setIsLoading(true);
         try {
@@ -46,31 +67,31 @@ export const CaretakerReportsScreen: React.FC = () => {
 
   const periodText = weeklyReport?.period_start && weeklyReport?.period_end
     ? `${weeklyReport.period_start} – ${weeklyReport.period_end}`
-    : WEEKLY_ANALYTICS_DATA.summaryReport.period;
+    : 'Current Week';
 
   const adherenceText = weeklyReport?.medication_adherence_rate !== undefined
     ? `${weeklyReport.medication_adherence_rate}%`
-    : WEEKLY_ANALYTICS_DATA.summaryReport.medicationAdherenceRate;
+    : '--';
 
   const totalSessionsText = weeklyReport?.total_sessions_completed !== undefined
     ? `${weeklyReport.total_sessions_completed} sessions`
-    : `${WEEKLY_ANALYTICS_DATA.summaryReport.totalSessions} sessions`;
+    : '0 sessions';
 
   const avgAccuracyText = weeklyReport?.average_accuracy !== undefined
     ? `${weeklyReport.average_accuracy} / 100`
-    : '77 / 100';
+    : '--';
 
-  const positiveHighlights = (weeklyReport?.positive_highlights?.length > 0)
+  const positiveHighlights: string[] = (weeklyReport?.positive_highlights && weeklyReport.positive_highlights.length > 0)
     ? weeklyReport.positive_highlights
-    : WEEKLY_ANALYTICS_DATA.summaryReport.highlightStrengths;
+    : ['Cognitive routines active'];
 
-  const gentleEncouragements = (weeklyReport?.gentle_encouragements?.length > 0)
+  const gentleEncouragements: string[] = (weeklyReport?.gentle_encouragements && weeklyReport.gentle_encouragements.length > 0)
     ? weeklyReport.gentle_encouragements
-    : WEEKLY_ANALYTICS_DATA.summaryReport.gentleEncouragements;
+    : ['Continue daily morning game sessions'];
 
   return (
     <div className="flex-1 flex flex-col justify-between bg-warm-50 dark:bg-stone-900 text-stone-800 dark:text-stone-100">
-      <Header title="Weekly Activity Report" showBack />
+      <Header title={t('nav_reports')} showBack />
 
       <div className="flex-1 p-4 sm:p-5 space-y-4 overflow-y-auto custom-scrollbar">
         
@@ -191,12 +212,20 @@ export const CaretakerReportsScreen: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            {INITIAL_AI_INSIGHTS.map((insight) => (
-              <div key={insight.id} className="p-3 rounded-2xl bg-white dark:bg-stone-800 border border-teal-100 dark:border-stone-700 text-xs">
-                <p className="font-bold text-teal-900 dark:text-teal-200 mb-0.5">{insight.title}</p>
-                <p className="text-stone-600 dark:text-stone-300 leading-relaxed font-medium">{insight.description}</p>
+            {weeklyReport?.observations && weeklyReport.observations.length > 0 ? (
+              weeklyReport.observations.map((obs: string, idx: number) => (
+                <div key={idx} className="p-3 rounded-2xl bg-white dark:bg-stone-800 border border-teal-100 dark:border-stone-700 text-xs">
+                  <p className="font-bold text-teal-900 dark:text-teal-200 mb-0.5">Observation {idx + 1}</p>
+                  <p className="text-stone-600 dark:text-stone-300 leading-relaxed font-medium">{obs}</p>
+                </div>
+              ))
+            ) : (
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-stone-800 border border-teal-100 dark:border-stone-700 text-xs text-center">
+                <p className="text-stone-500 dark:text-stone-400 font-medium">
+                  No automated weekly digest available yet. Complete more cognitive sessions to generate behavioral synthesis.
+                </p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 

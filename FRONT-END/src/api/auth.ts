@@ -53,6 +53,24 @@ export interface PatientRegisterPayload {
   gender?: string;
 }
 
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+}
+
+export interface ResetPasswordPayload {
+  email: string;
+  otp: string;
+  new_password: string;
+}
+
+export interface ResetPasswordResponse {
+  message: string;
+}
+
 export const authApi = {
   async register(payload: RegisterPayload): Promise<TokenResponse> {
     const res = await apiClient<TokenResponse>('/auth/register', {
@@ -74,6 +92,19 @@ export const authApi = {
       skipAuth: true,
     });
     setAuthTokens(res);
+
+    try {
+      const me = await authApi.getMe();
+      if (me?.patient_id) {
+        return {
+          ...res,
+          patient_id: me.patient_id,
+        };
+      }
+    } catch (err) {
+      console.debug('[authApi] Could not fetch patient profile immediately after registration', err);
+    }
+
     return res;
   },
 
@@ -123,6 +154,22 @@ export const authApi = {
   async getMe(): Promise<UserProfileResponse> {
     return apiClient<UserProfileResponse>('/auth/me', {
       method: 'GET',
+    });
+  },
+
+  async forgotPassword(payload: ForgotPasswordPayload): Promise<ForgotPasswordResponse> {
+    return apiClient<ForgotPasswordResponse>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      skipAuth: true,
+    });
+  },
+
+  async resetPassword(payload: ResetPasswordPayload): Promise<ResetPasswordResponse> {
+    return apiClient<ResetPasswordResponse>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      skipAuth: true,
     });
   },
 };

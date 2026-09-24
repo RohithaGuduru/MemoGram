@@ -20,6 +20,18 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing Cognitive Assistance Platform Backend...")
     # Create tables automatically for development / local SQLite if needed
     Base.metadata.create_all(bind=engine)
+    try:
+        from sqlalchemy import text, inspect
+        inspector = inspect(engine)
+        if "caregivers" in inspector.get_table_names():
+            columns = [col["name"] for col in inspector.get_columns("caregivers")]
+            with engine.begin() as conn:
+                if "preferred_language" not in columns:
+                    conn.execute(text("ALTER TABLE caregivers ADD COLUMN preferred_language VARCHAR(16) DEFAULT 'en' NOT NULL"))
+                if "font_size" not in columns:
+                    conn.execute(text("ALTER TABLE caregivers ADD COLUMN font_size VARCHAR(16) DEFAULT 'normal' NOT NULL"))
+    except Exception as e:
+        logger.warning(f"Caregiver preference column migration note: {e}")
     logger.info("Database schema initialized.")
     yield
     # Shutdown logic

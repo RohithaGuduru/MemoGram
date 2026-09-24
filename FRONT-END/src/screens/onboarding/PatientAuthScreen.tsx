@@ -5,6 +5,7 @@ import { SpeakTextButton } from '../../components/common/SpeakTextButton';
 import { Header } from '../../components/common/Header';
 import { authApi } from '../../api/auth';
 import { patientsApi } from '../../api/patients';
+import { isRealPatientId } from '../../services/demoFallback';
 
 export const PatientAuthScreen: React.FC = () => {
   const { navigateTo, setRole, updatePatient, patient, refreshData, showToast } = useApp();
@@ -31,15 +32,11 @@ export const PatientAuthScreen: React.FC = () => {
         password: password,
       });
 
-      showToast(`Welcome back, ${name}!`, 'success');
-      updatePatient({ name, email, phone });
-      setRole('patient');
-
       // Refresh data and check setup status
       let isSetupCompleted = false;
       try {
         const me = await authApi.getMe();
-        if (me?.patient_id) {
+        if (me && isRealPatientId(me.patient_id)) {
           const pData = await patientsApi.getPatient(me.patient_id);
           if (pData?.accessibility_preferences?.preferences_configured) {
             isSetupCompleted = true;
@@ -55,23 +52,16 @@ export const PatientAuthScreen: React.FC = () => {
 
       await refreshData();
 
-      if (isSetupCompleted) {
-        navigateTo('patient_home');
-      } else {
-        navigateTo('patient_setup');
-      }
+      showToast(`Welcome back, ${name}!`, 'success');
+      updatePatient({ name, email, phone });
+      setRole('patient', isSetupCompleted ? 'patient_home' : 'patient_setup');
     } catch (err: any) {
       console.debug('[PatientAuth] Login fallback:', err);
       showToast(`Welcome, ${name}!`, 'success');
       updatePatient({ name, email, phone });
-      setRole('patient');
 
       const isLocalSetupDone = localStorage.getItem('memogram_patient_setup_completed') === 'true';
-      if (isLocalSetupDone) {
-        navigateTo('patient_home');
-      } else {
-        navigateTo('patient_setup');
-      }
+      setRole('patient', isLocalSetupDone ? 'patient_home' : 'patient_setup');
     } finally {
       setIsLoading(false);
     }
@@ -99,32 +89,40 @@ export const PatientAuthScreen: React.FC = () => {
         gender: gender,
       });
 
-      showToast('Patient account created! Let’s set your preferences.', 'success');
-      updatePatient({ 
-        id: regRes?.patient_id || undefined,
-        name: name.trim(), 
-        email: email.trim(), 
-        phone: phone.trim(),
-        gender: gender 
-      });
-      setRole('patient');
+      const createdPatientId = regRes?.patient_id;
 
       // Clear previous setup flag for new account
       try {
         localStorage.removeItem('memogram_patient_setup_completed');
       } catch {}
 
-      await refreshData();
+      showToast('Patient account created! Let’s set your preferences.', 'success');
+      updatePatient({ 
+        id: createdPatientId || undefined,
+        name: name.trim(), 
+        email: email.trim(), 
+        phone: phone.trim(),
+        gender: gender 
+      });
 
-      // Directly proceed to First-Time Language & Font Setup
-      navigateTo('patient_setup');
+      // Set role and immediately navigate to Language & Font Preference screen
+      setRole('patient', 'patient_setup');
+
+      // Refresh data in background to prime state if real ID exists
+      if (createdPatientId && isRealPatientId(createdPatientId)) {
+        refreshData().catch((err) => {
+          console.debug('[PatientAuth] Background data refresh error:', err);
+        });
+      }
     } catch (err: any) {
       console.error('[PatientAuth] Registration error:', err);
-      // Even if network fails, allow seamless entry into first-time setup
-      showToast('Profile created! Let’s set your preferences.', 'success');
+      // Demo fallback: allow seamless entry into first-time setup
+      showToast('Profile created (Demo mode)! Let’s set your preferences.', 'success');
       updatePatient({ name: name.trim(), email: email.trim(), phone: phone.trim() });
-      setRole('patient');
-      navigateTo('patient_setup');
+      try {
+        localStorage.removeItem('memogram_patient_setup_completed');
+      } catch {}
+      setRole('patient', 'patient_setup');
     } finally {
       setIsLoading(false);
     }
@@ -141,21 +139,27 @@ export const PatientAuthScreen: React.FC = () => {
       });
       showToast('Signed in via Google', 'success');
       updatePatient({ name: 'Arun', email: 'arun.elder@gmail.com' });
-      setRole('patient');
       await refreshData();
       
-      const isSetupDone = localStorage.getItem('memogram_patient_setup_completed') === 'true';
-      if (isSetupDone) {
-        navigateTo('patient_home');
-      } else {
-        navigateTo('patient_setup');
+      let isSetupDone = localStorage.getItem('memogram_patient_setup_completed') === 'true';
+      if (!isSetupDone) {
+        try {
+          const me = await authApi.getMe();
+          if (me && isRealPatientId(me.patient_id)) {
+            const pData = await patientsApi.getPatient(me.patient_id);
+            if (pData?.accessibility_preferences?.preferences_configured) {
+              isSetupDone = true;
+            }
+          }
+        } catch {}
       }
+
+      setRole('patient', isSetupDone ? 'patient_home' : 'patient_setup');
     } catch (err: any) {
       console.debug('[PatientAuth] Google auth fallback:', err);
       showToast('Welcome, Arun!', 'success');
       updatePatient({ name: 'Arun', email: 'arun.elder@gmail.com' });
-      setRole('patient');
-      navigateTo('patient_setup');
+      setRole('patient', 'patient_setup');
     } finally {
       setIsLoading(false);
     }
@@ -284,6 +288,15 @@ export const PatientAuthScreen: React.FC = () => {
                   className="w-full px-3 py-2 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   required
                 />
+                <div className="flex justify-end mt-1.5">
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('forgot_password')}
+                    className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
               </div>
 
               <button
@@ -291,7 +304,7 @@ export const PatientAuthScreen: React.FC = () => {
                 disabled={isLoading}
                 className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors cursor-pointer"
               >
-                Sign In
+                Sign In &amp; Continue
               </button>
             </form>
 

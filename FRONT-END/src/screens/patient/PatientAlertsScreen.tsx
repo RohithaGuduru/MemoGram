@@ -17,7 +17,7 @@ import { SpeakTextButton } from '../../components/common/SpeakTextButton';
 import { t } from '../../services/languageCapabilities';
 
 export const PatientAlertsScreen: React.FC = () => {
-  const { alerts, markAlertRead, dismissAlert, navigateTo, primaryLanguage, fallbackLanguage } = useApp();
+  const { alerts, medications, markAlertRead, dismissAlert, navigateTo, t } = useApp();
 
   const getAlertIcon = (type: string) => {
     switch (type) {
@@ -34,7 +34,7 @@ export const PatientAlertsScreen: React.FC = () => {
     <div className="flex-1 flex flex-col justify-between bg-warm-50 dark:bg-stone-900 text-stone-800 dark:text-stone-100">
       
       {/* Header */}
-      <Header title={t('nav_alerts', primaryLanguage, fallbackLanguage)} audioPrompt={pageIntroAudio} showSOS />
+      <Header title={t('nav_alerts')} audioPrompt={pageIntroAudio} showSOS />
 
       <div className="flex-1 p-4 sm:p-5 space-y-4 overflow-y-auto custom-scrollbar">
         
@@ -46,10 +46,10 @@ export const PatientAlertsScreen: React.FC = () => {
             </div>
             <div>
               <h2 className="text-base font-extrabold text-stone-900 dark:text-stone-100">
-                {t('settings_notifications', primaryLanguage, fallbackLanguage)}
+                {t('settings_notifications')}
               </h2>
               <p className="text-xs text-stone-500">
-                {alerts.filter((a) => a.unread).length} unread updates
+                {t('unread_updates_count', { count: alerts.filter((a) => a.unread).length })}
               </p>
             </div>
           </div>
@@ -61,6 +61,12 @@ export const PatientAlertsScreen: React.FC = () => {
         <div className="space-y-3">
           {alerts.map((alert) => {
             const alertAudio = `${alert.title}. ${alert.message} Received at ${alert.time}.`;
+            const matchingMed = (alert.type === 'medication_reminder' || alert.type === 'missed_medication')
+              ? medications.find((m) => 
+                  alert.title.toLowerCase().includes(m.name.toLowerCase()) || 
+                  alert.message.toLowerCase().includes(m.name.toLowerCase())
+                )
+              : null;
 
             return (
               <div
@@ -74,9 +80,17 @@ export const PatientAlertsScreen: React.FC = () => {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-2xl bg-stone-100 dark:bg-stone-750 flex-shrink-0 mt-0.5">
-                      {getAlertIcon(alert.type)}
-                    </div>
+                    {matchingMed?.photoUrl ? (
+                      <img
+                        src={matchingMed.photoUrl}
+                        alt={matchingMed.name}
+                        className="w-12 h-12 rounded-2xl object-cover ring-2 ring-teal-500/30 flex-shrink-0 mt-0.5"
+                      />
+                    ) : (
+                      <div className="p-2.5 rounded-2xl bg-stone-100 dark:bg-stone-750 flex-shrink-0 mt-0.5">
+                        {getAlertIcon(alert.type)}
+                      </div>
+                    )}
 
                     <div>
                       <div className="flex items-center gap-2">
@@ -111,9 +125,9 @@ export const PatientAlertsScreen: React.FC = () => {
                         e.stopPropagation();
                         navigateTo(alert.actionScreen as any);
                       }}
-                      className="px-4 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs"
+                      className="px-4 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
                     >
-                      <span>Open</span>
+                      <span>{t('btn_open')}</span>
                       <ArrowRight size={13} />
                     </button>
                   </div>

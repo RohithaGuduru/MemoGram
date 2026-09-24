@@ -30,6 +30,7 @@ class PatientUpdate(BaseModel):
     full_name: Optional[str] = None
     phone: Optional[str] = None
     date_of_birth: Optional[date] = None
+    primary_language: Optional[str] = None
     preferred_language: Optional[str] = None
     font_size: Optional[str] = None
     timezone: Optional[str] = None
@@ -45,6 +46,7 @@ class PatientResponse(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     date_of_birth: Optional[date] = None
+    primary_language: Optional[str] = None
     preferred_language: str
     font_size: str
     timezone: str

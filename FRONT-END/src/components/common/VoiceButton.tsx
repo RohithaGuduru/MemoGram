@@ -24,8 +24,11 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
     stopVoiceListening, 
     primaryLanguage, 
     showToast,
-    voiceTranscript 
+    voiceTranscript,
+    t 
   } = useApp();
+
+  const displayLabel = label || t('tap_to_speak');
 
   const langInfo = getLanguageInfo(primaryLanguage);
   const voiceAvailable = isVoiceInputAvailable(primaryLanguage);
@@ -33,7 +36,7 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
   const handleToggle = () => {
     if (!voiceAvailable) {
       showToast(
-        `Voice support for ${langInfo.name} is currently under development.`,
+        langInfo.capabilities.statusNote || `Voice support for ${langInfo.name} is currently unavailable.`,
         'warning',
         'Voice Assistant'
       );
@@ -83,17 +86,17 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
             <div className="text-left flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-xl font-bold tracking-tight">
-                  {!voiceAvailable ? label : isListening ? 'Listening to you...' : label}
+                  {!voiceAvailable ? displayLabel : isListening ? t('listening') : displayLabel}
                 </span>
                 {!voiceAvailable && (
                   <span className="text-xs bg-stone-300 text-stone-700 font-bold px-2 py-0.5 rounded-full">
-                    Dev
+                    Unavailable
                   </span>
                 )}
               </div>
               <p className={`text-sm mt-0.5 ${isListening ? 'text-rose-100' : 'text-teal-100'}`}>
                 {!voiceAvailable
-                  ? `Voice in ${langInfo.name} under development`
+                  ? (langInfo.capabilities.statusNote || `Voice in ${langInfo.name} unavailable`)
                   : isListening
                   ? 'Speak naturally now...'
                   : subtext || `Tap anytime to talk with Memogram`}
@@ -123,7 +126,7 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
     <button
       type="button"
       onClick={handleToggle}
-      aria-label={label}
+      aria-label={displayLabel}
       className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-teal-500 active:scale-95 shadow-sm ${
         !voiceAvailable
           ? 'bg-stone-100 text-stone-400 border border-stone-200 cursor-pointer'
@@ -135,20 +138,20 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
       {!voiceAvailable ? (
         <>
           <MicOff size={18} />
-          <span>{label}</span>
+          <span>{displayLabel}</span>
           <span className="text-[10px] bg-stone-300 text-stone-700 font-bold px-1.5 py-0.5 rounded">
-            Dev
+            Unavailable
           </span>
         </>
       ) : isListening ? (
         <>
           <Mic size={18} className="animate-bounce" />
-          <span>Listening...</span>
+          <span>{t('listening')}</span>
         </>
       ) : (
         <>
           <Mic size={18} />
-          <span>{label}</span>
+          <span>{displayLabel}</span>
         </>
       )}
     </button>

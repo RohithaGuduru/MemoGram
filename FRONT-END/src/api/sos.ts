@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { isRealPatientId, isDemoId, DemoModeApiError } from '../services/demoFallback';
 
 export type SOSStatusType = 'TRIGGERED' | 'ACKNOWLEDGED' | 'RESOLVED';
 
@@ -23,6 +24,9 @@ export interface SOSBackendResponse {
 
 export const sosApi = {
   async triggerSOS(payload: SOSPayload): Promise<SOSBackendResponse> {
+    if (!isRealPatientId(payload.patient_id)) {
+      throw new DemoModeApiError(`Cannot trigger backend SOS for demo patient ID: ${payload.patient_id}`);
+    }
     return apiClient<SOSBackendResponse>('/sos/trigger', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -37,6 +41,9 @@ export const sosApi = {
   },
 
   async resolveSOS(id: string): Promise<SOSBackendResponse> {
+    if (isDemoId(id)) {
+      throw new DemoModeApiError(`Cannot resolve backend SOS for demo ID: ${id}`);
+    }
     return apiClient<SOSBackendResponse>(`/sos/${id}/resolve`, {
       method: 'PATCH',
     });

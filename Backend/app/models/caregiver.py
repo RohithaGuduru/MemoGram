@@ -31,6 +31,16 @@ class Caregiver(Base):
     agency: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     relationship_with_patient: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    preferred_language: Mapped[str] = mapped_column(
+        String(16),
+        default="en",
+        nullable=False,
+    )
+    font_size: Mapped[str] = mapped_column(
+        String(16),
+        default="normal",
+        nullable=False,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

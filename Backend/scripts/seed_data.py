@@ -293,6 +293,28 @@ def seed_database():
                 metadata_info={"regional_tags": ["Family", "Stories"], "icon": "photo_album"},
                 is_active=True,
             ),
+            Game(
+                code="MEMORY_MOSAIC",
+                name="Memory Mosaic — Build the Picture",
+                category=GameCategory.PATTERN_RECOGNITION,
+                description="Look at the target picture and recreate the colorful mosaic using geometric pieces.",
+                min_difficulty=1,
+                max_difficulty=5,
+                default_config={"pieces_count": 4},
+                metadata_info={"regional_tags": ["Mosaic", "Shapes", "Memory"], "icon": "puzzle"},
+                is_active=True,
+            ),
+            Game(
+                code="BLOCK_MIND",
+                name="Block Mind",
+                category=GameCategory.ATTENTION,
+                description="Place block shapes to clear complete rows and columns on the puzzle grid.",
+                min_difficulty=1,
+                max_difficulty=5,
+                default_config={"grid_size": 7},
+                metadata_info={"regional_tags": ["Spatial", "Puzzle", "Planning"], "icon": "grid"},
+                is_active=True,
+            ),
             # Compatibility game codes
             Game(
                 code="MEM_PHOTO_RECALL",

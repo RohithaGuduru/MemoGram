@@ -31,7 +31,8 @@ export const Header: React.FC<HeaderProps> = ({
     navigateTo, 
     goBack, 
     openSosModal, 
-    alerts 
+    alerts,
+    t 
   } = useApp();
 
   const handleBack = () => {
@@ -54,7 +55,7 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             onClick={handleBack}
             className="p-2 rounded-2xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-200 transition-all active:scale-95 flex items-center justify-center min-w-[40px] min-h-[40px]"
-            aria-label="Go Back"
+            aria-label={t('btn_back') || 'Go Back'}
           >
             <ArrowLeft size={20} />
           </button>
@@ -71,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({
                 Memogram
               </span>
               <span className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold tracking-wider uppercase">
-                {role === 'caretaker' ? 'Caretaker Portal' : `Companion for ${patient.name}`}
+                {role === 'caretaker' ? t('caretaker_portal') : `Companion for ${patient.name}`}
               </span>
             </div>
           </div>
@@ -112,7 +113,7 @@ export const Header: React.FC<HeaderProps> = ({
             aria-label="SOS Emergency Help"
           >
             <ShieldAlert size={16} />
-            <span>SOS HELP</span>
+            <span>{t('sos_help')}</span>
           </button>
         )}
 
@@ -123,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-teal-50 dark:bg-stone-800 border border-teal-200 dark:border-stone-700 text-teal-900 dark:text-teal-200 text-xs font-semibold cursor-pointer hover:bg-teal-100"
           >
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-            <span>Patient: {patient.name}</span>
+            <span>{t('patient_label_header', { name: patient.name })}</span>
           </div>
         )}
 

@@ -8,7 +8,16 @@ from app.utils.enums import LanguageCapabilityStatus
 
 
 def get_initial_language_registry() -> List[Dict[str, Any]]:
-    indic_parler_active = bool(settings.INDIC_PARLER_TTS_ENABLED)
+    sarvam_active = bool((settings.SARVAM_API_KEY and len(settings.SARVAM_API_KEY) > 5) or settings.DEBUG)
+    indic_parler_active = bool(settings.INDIC_PARLER_TTS_ENABLED and (settings.INDIC_PARLER_TTS_ENDPOINT or settings.INDIC_PARLER_TTS_MODEL))
+    azure_tts_active = bool(settings.AZURE_SPEECH_KEY and len(settings.AZURE_SPEECH_KEY) > 10)
+
+    def calc_status(stt: bool, tts: bool) -> LanguageCapabilityStatus:
+        if stt and tts:
+            return LanguageCapabilityStatus.AVAILABLE
+        elif stt or tts:
+            return LanguageCapabilityStatus.PARTIAL
+        return LanguageCapabilityStatus.IN_DEVELOPMENT
 
     return [
         {
@@ -18,15 +27,15 @@ def get_initial_language_registry() -> List[Dict[str, Any]]:
             "script": "Bengali-Assamese",
             "text_available": True,
             "ui_text_available": True,
-            "stt_available": True,
+            "stt_available": sarvam_active,
             "stt_provider": "sarvam",
-            "translation_available": True,
+            "translation_available": sarvam_active,
             "translation_provider": "sarvam",
             "tts_available": indic_parler_active,
-            "tts_provider": "indic_parler" if indic_parler_active else "none",
-            "status": LanguageCapabilityStatus.AVAILABLE if indic_parler_active else LanguageCapabilityStatus.PARTIAL,
+            "tts_provider": "indic_parler",
+            "status": calc_status(sarvam_active, indic_parler_active),
             "enabled": True,
-            "metadata_info": {"notes": "Assamese text/STT/translation active. TTS routed via Indic Parler-TTS when enabled."},
+            "metadata_info": {"notes": "Assamese STT via Sarvam Saaras v3, TTS routed via Indic Parler-TTS."},
         },
         {
             "language_code": "brx",
@@ -35,15 +44,15 @@ def get_initial_language_registry() -> List[Dict[str, Any]]:
             "script": "Devanagari",
             "text_available": True,
             "ui_text_available": True,
-            "stt_available": True,
+            "stt_available": sarvam_active,
             "stt_provider": "sarvam",
-            "translation_available": True,
+            "translation_available": sarvam_active,
             "translation_provider": "sarvam",
             "tts_available": indic_parler_active,
-            "tts_provider": "indic_parler" if indic_parler_active else "indic_parler",
-            "status": LanguageCapabilityStatus.AVAILABLE if indic_parler_active else LanguageCapabilityStatus.PARTIAL,
+            "tts_provider": "indic_parler",
+            "status": calc_status(sarvam_active, indic_parler_active),
             "enabled": True,
-            "metadata_info": {"notes": "Bodo text/STT active. Native TTS provided by Indic Parler-TTS."},
+            "metadata_info": {"notes": "Bodo STT via Sarvam Saaras v3, TTS routed via Indic Parler-TTS."},
         },
         {
             "language_code": "mni",
@@ -52,15 +61,15 @@ def get_initial_language_registry() -> List[Dict[str, Any]]:
             "script": "Meetei Mayek / Bengali",
             "text_available": True,
             "ui_text_available": True,
-            "stt_available": True,
+            "stt_available": sarvam_active,
             "stt_provider": "sarvam",
-            "translation_available": True,
+            "translation_available": sarvam_active,
             "translation_provider": "sarvam",
             "tts_available": indic_parler_active,
-            "tts_provider": "indic_parler" if indic_parler_active else "indic_parler",
-            "status": LanguageCapabilityStatus.AVAILABLE if indic_parler_active else LanguageCapabilityStatus.PARTIAL,
+            "tts_provider": "indic_parler",
+            "status": calc_status(sarvam_active, indic_parler_active),
             "enabled": True,
-            "metadata_info": {"notes": "Manipuri text/STT active. Native TTS provided by Indic Parler-TTS."},
+            "metadata_info": {"notes": "Manipuri STT via Sarvam Saaras v3, TTS routed via Indic Parler-TTS."},
         },
         {
             "language_code": "kokborok",
@@ -97,21 +106,38 @@ def get_initial_language_registry() -> List[Dict[str, Any]]:
             "metadata_info": {"notes": "Mizo speech provider integration in development."},
         },
         {
+            "language_code": "kha",
+            "display_name": "Khasi",
+            "native_name": "Ka Ktien Khasi",
+            "script": "Latin",
+            "text_available": True,
+            "ui_text_available": True,
+            "stt_available": False,
+            "stt_provider": "none",
+            "translation_available": False,
+            "translation_provider": "none",
+            "tts_available": False,
+            "tts_provider": "none",
+            "status": LanguageCapabilityStatus.IN_DEVELOPMENT,
+            "enabled": True,
+            "metadata_info": {"notes": "Khasi speech provider integration in development."},
+        },
+        {
             "language_code": "hi",
             "display_name": "Hindi",
             "native_name": "हिन्दी",
             "script": "Devanagari",
             "text_available": True,
             "ui_text_available": True,
-            "stt_available": True,
+            "stt_available": sarvam_active,
             "stt_provider": "sarvam",
-            "translation_available": True,
+            "translation_available": sarvam_active,
             "translation_provider": "sarvam",
-            "tts_available": True,
-            "tts_provider": "sarvam",
-            "status": LanguageCapabilityStatus.AVAILABLE,
+            "tts_available": indic_parler_active or sarvam_active,
+            "tts_provider": "indic_parler",
+            "status": calc_status(sarvam_active, indic_parler_active or sarvam_active),
             "enabled": True,
-            "metadata_info": {"notes": "Full STT, translation, and TTS enabled via Sarvam AI."},
+            "metadata_info": {"notes": "Hindi STT via Sarvam Saaras v3, TTS via Indic Parler-TTS (Sarvam fallback)."},
         },
         {
             "language_code": "en",
@@ -120,15 +146,15 @@ def get_initial_language_registry() -> List[Dict[str, Any]]:
             "script": "Latin",
             "text_available": True,
             "ui_text_available": True,
-            "stt_available": True,
-            "stt_provider": "azure",
-            "translation_available": True,
+            "stt_available": sarvam_active,
+            "stt_provider": "sarvam",
+            "translation_available": sarvam_active,
             "translation_provider": "sarvam",
-            "tts_available": True,
-            "tts_provider": "azure",
-            "status": LanguageCapabilityStatus.AVAILABLE,
+            "tts_available": indic_parler_active or sarvam_active or azure_tts_active,
+            "tts_provider": "indic_parler",
+            "status": calc_status(sarvam_active, indic_parler_active or sarvam_active or azure_tts_active),
             "enabled": True,
-            "metadata_info": {"notes": "Full STT and TTS enabled via speech router."},
+            "metadata_info": {"notes": "English STT via Sarvam Saaras v3, TTS via Indic Parler-TTS (Sarvam/Azure fallback)."},
         },
     ]
 
@@ -163,12 +189,20 @@ class LanguageService:
                 )
                 db.add(cap)
             else:
-                # Keep provider mappings updated
-                cap.tts_provider = item["tts_provider"]
-                cap.tts_available = item["tts_available"]
+                # Keep provider mappings and dynamic availability updated
+                cap.display_name = item["display_name"]
+                cap.native_name = item["native_name"]
+                cap.script = item["script"]
+                cap.text_available = item["text_available"]
+                cap.ui_text_available = item["ui_text_available"]
+                cap.stt_available = item["stt_available"]
                 cap.stt_provider = item["stt_provider"]
+                cap.tts_available = item["tts_available"]
+                cap.tts_provider = item["tts_provider"]
+                cap.translation_available = item["translation_available"]
                 cap.translation_provider = item["translation_provider"]
                 cap.status = item["status"]
+                cap.metadata_info = item["metadata_info"]
         db.commit()
 
     @classmethod
@@ -203,8 +237,12 @@ class LanguageService:
         """Retrieves capabilities for a specific language code (normalized)."""
         cls.initialize_registry_if_needed(db)
         norm_code = code.lower().split("-")[0]
+        alias_map = {"khasi": "kha", "kha": "kha", "kokborok": "kokborok", "trp": "kokborok", "mizo": "mizo", "lus": "mizo"}
+        resolved_code = alias_map.get(norm_code, norm_code)
         r = db.query(LanguageCapability).filter(
-            (LanguageCapability.language_code == norm_code) | (LanguageCapability.language_code == code.lower())
+            (LanguageCapability.language_code == norm_code) | 
+            (LanguageCapability.language_code == resolved_code) | 
+            (LanguageCapability.language_code == code.lower())
         ).first()
 
         if not r:

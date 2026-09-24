@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Smartphone, Monitor, Globe, Moon, Sun, Sparkles, SlidersHorizontal } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import { useApp } from '../../context/AppContext';
 import { getLanguageInfo } from '../../services/languageCapabilities';
 import { LanguageSelectorModal } from '../common/LanguageSelectorModal';
@@ -20,8 +21,10 @@ export const MobileFrame: React.FC<MobileFrameProps> = ({ children }) => {
 
   const [currentTime, setCurrentTime] = useState('9:41');
   const [isLangModalOpen, setIsLangModalOpen] = useState(false);
+  const isNative = Capacitor.isNativePlatform();
 
   useEffect(() => {
+    if (isNative) return;
     const update = () => {
       const d = new Date();
       setCurrentTime(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }));
@@ -29,9 +32,23 @@ export const MobileFrame: React.FC<MobileFrameProps> = ({ children }) => {
     update();
     const timer = setInterval(update, 30000);
     return () => clearInterval(timer);
-  }, []);
+  }, [isNative]);
 
   const langInfo = getLanguageInfo(primaryLanguage);
+
+  if (isNative) {
+    return (
+      <div className="w-full min-h-[100dvh] flex flex-col bg-warm-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 font-sans selection:bg-teal-200">
+        <div className="flex-1 flex flex-col relative overflow-y-auto custom-scrollbar bg-warm-50 dark:bg-stone-900">
+          {children}
+        </div>
+        <LanguageSelectorModal
+          isOpen={isLangModalOpen}
+          onClose={() => setIsLangModalOpen(false)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-stone-100 dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex flex-col font-sans selection:bg-teal-200">

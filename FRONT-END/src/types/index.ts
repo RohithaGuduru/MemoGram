@@ -6,6 +6,7 @@ export type SupportedLanguageCode =
   | 'mni-IN' // Manipuri / Meitei (মৈতৈ)
   | 'trp-IN' // Kokborok (ককবোরক)
   | 'lus-IN' // Mizo (Mizo)
+  | 'kha-IN' // Khasi (Ka Ktien Khasi)
   | 'hi-IN'  // Hindi (हिंदी)
   | 'en-IN'; // English
 
@@ -39,6 +40,7 @@ export interface FamilyMember {
   id: string;
   name: string;
   relationship: string;
+  category?: 'Parents' | 'Spouse' | 'Siblings' | 'Child' | 'Other' | string;
   phone?: string;
   photoUrl?: string;
   avatarBg?: string;
@@ -50,6 +52,9 @@ export interface Medication {
   name: string;
   dosage: string;
   scheduleTime: string; // e.g. "9:00 AM"
+  medicineType?: 'Capsules' | 'Tablets' | 'Syrup / Tonic' | string;
+  frequency?: string; // e.g. "Once", "Twice", "Thrice", "Daily"
+  scheduledTimes?: string[]; // e.g. ["8:00 AM", "8:00 PM"]
   timeCategory: 'morning' | 'afternoon' | 'evening' | 'night';
   remainingQuantity: number;
   totalQuantity: number;
@@ -61,6 +66,25 @@ export interface Medication {
   prescribedBy?: string;
 }
 
+export interface HydrationSettings {
+  dailyGoalGlasses: number; // e.g. 8 or 3
+  dailyGoal?: number; // alias for goal value
+  unit: 'glasses' | 'litres';
+  startTime: string; // e.g. '08:00 AM'
+  endTime: string; // e.g. '08:00 PM'
+  reminderIntervalMinutes: number; // 30, 60, 120
+  enabled?: boolean;
+}
+
+export interface Appointment {
+  id: string;
+  hospitalName: string;
+  doctorName: string;
+  date: string; // YYYY-MM-DD
+  time: string; // e.g. "10:30 AM"
+  notes?: string;
+}
+
 export interface CognitiveMetrics {
   attention: number; // 0-100
   memory: number; // 0-100
@@ -68,9 +92,13 @@ export interface CognitiveMetrics {
   overallScore: number; // 0-100
   trend: 'improving' | 'stable' | 'needs_attention';
   weeklyActivityMinutes: number;
+  cognitiveTimeTodayMinutes?: number;
   gamesPlayedToday: number;
   sessionsCompleted: number;
   lastPlayedAt: string;
+  stepsToday?: number;
+  stepGoal?: number;
+  waterConsumedToday?: number;
 }
 
 export type GameId = 
@@ -78,12 +106,14 @@ export type GameId =
   | 'routine' 
   | 'cup_shuffle' 
   | 'cultural_match' 
-  | 'family_stories';
+  | 'family_stories'
+  | 'memory_mosaic'
+  | 'block_mind';
 
 export interface GameMetadata {
   id: GameId;
   name: string;
-  category: 'Memory' | 'Executive Function' | 'Attention & Focus' | 'Cultural Memory' | 'Storytelling & Speech';
+  category: 'Memory' | 'Executive Function' | 'Attention & Focus' | 'Cultural Memory' | 'Storytelling & Speech' | 'Pattern Recognition' | 'Spatial Planning';
   shortDescription: string;
   iconName: string;
   colorScheme: {
@@ -140,6 +170,7 @@ export interface PatientProfile {
   photoUrl: string;
   primaryLanguage: SupportedLanguageCode;
   fallbackLanguage: SupportedLanguageCode;
+  fontSize?: FontSizeSetting;
   caretakerId: string;
   caretakerName: string;
   emergencyContact: {
@@ -147,6 +178,12 @@ export interface PatientProfile {
     relationship: string;
     phone: string;
   };
+  hydrationSettings?: HydrationSettings;
+  appointments?: Appointment[];
+  accessibility_preferences?: Record<string, any>;
+  stepsToday?: number;
+  stepGoal?: number;
+  waterConsumedToday?: number;
 }
 
 export interface CaretakerProfile {
@@ -157,6 +194,7 @@ export interface CaretakerProfile {
   relationshipToPatient: string;
   photoUrl: string;
   language: SupportedLanguageCode;
+  fontSize: FontSizeSetting;
 }
 
 export type ScreenId = 
@@ -167,6 +205,8 @@ export type ScreenId =
   | 'caretaker_setup'
   | 'patient_auth'
   | 'patient_setup'
+  | 'forgot_password'
+  | 'reset_password'
   // Caretaker Portal
   | 'caretaker_dashboard'
   | 'caretaker_medications'
@@ -188,4 +228,6 @@ export type ScreenId =
   | 'game_routine'
   | 'game_cup_shuffle'
   | 'game_cultural_match'
-  | 'game_family_stories';
+  | 'game_family_stories'
+  | 'game_memory_mosaic'
+  | 'game_block_mind';
